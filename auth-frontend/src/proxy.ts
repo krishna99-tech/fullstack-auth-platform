@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
+export default function proxy(request: NextRequest) {
   // We can't access localStorage in Middleware (it runs on the server).
   // In a robust application, you would store the JWT in an HttpOnly cookie 
   // and check it here: `request.cookies.get('token')`.

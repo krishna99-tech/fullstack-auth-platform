@@ -144,8 +144,8 @@ export function SidebarNavigationDualTier() {
     router.push('/login');
   };
 
-  const activePrimaryItem = navItems.find(item => item.label === activePrimaryId) || footerItems.find(item => item.label === activePrimaryId);
-  const hasSubItems = activePrimaryItem && 'items' in activePrimaryItem && activePrimaryItem.items && activePrimaryItem.items.length > 0;
+  const activePrimaryItem: any = navItems.find(item => item.label === activePrimaryId) || footerItems.find(item => item.label === activePrimaryId);
+  const hasSubItems = activePrimaryItem && activePrimaryItem.items && Array.isArray(activePrimaryItem.items) && activePrimaryItem.items.length > 0;
   const showSecondary = hasSubItems && isSecondaryOpen;
 
   return (
@@ -252,7 +252,7 @@ export function SidebarNavigationDualTier() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 py-2 space-y-1">
-          {hasSubItems && 'items' in activePrimaryItem! && activePrimaryItem.items?.map((subItem) => {
+          {hasSubItems && 'items' in activePrimaryItem! && activePrimaryItem.items?.map((subItem: any) => {
             const isSubActive = pathname === subItem.href || pathname.startsWith(subItem.href + '/');
             const SubIcon = subItem.icon;
             
