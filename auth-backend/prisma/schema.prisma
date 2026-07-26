@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  passwordHash       String?
+  name               String?
+  phoneNumber        String?
+  googleId           String?   @unique
+  githubId           String?   @unique
+  isVerified         Boolean   @default(false)
+  mfaEnabled         Boolean   @default(false)
+  mfaSecret          String?
+  verificationToken  String?
+  verificationCodeExpiry DateTime?
+  resetPasswordToken String?
+  resetPasswordExpiry DateTime?
+  createdAt          DateTime  @default(now())
+  sessions           Session[]
+}
+
+model Session {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token      String   @unique // The JWT string
+  device     String   // e.g. "MacBook Pro - Chrome"
+  ipAddress  String?
+  lastActive DateTime @default(now())
+  createdAt  DateTime @default(now())
+}

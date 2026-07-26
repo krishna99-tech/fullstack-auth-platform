@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: sans-serif; background-color: #f4f4f4; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; padding: 20px; border-radius: 8px; border: 1px solid #ddd; text-align: center; }
+    .header { color: #333; }
+    .code-box { background-color: #f0f0f0; border: 1px solid #ccc; padding: 15px 30px; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; display: inline-block; margin: 20px 0; border-radius: 8px; }
+    .footer { color: #666; font-size: 14px; margin-top: 20px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2 class="header">Verify your email address</h2>
+    <p>Thank you for signing up! Please use the 6-digit code below to verify your account.</p>
+    
+    <div class="code-box">
+      {{verifyCode}}
+    </div>
+    
+    <style>
+      .btn-container { margin-top: 30px; }
+      .btn { background-color: #000; color: #fff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block; }
+    </style>
+    
+    <div class="btn-container">
+      <p style="margin-bottom: 15px; color: #666;">Or, you can verify automatically by clicking the button below:</p>
+      <a href="{{verifyLink}}" class="btn">Verify Email Address</a>
+    </div>
+    
+    <p class="footer">This code will expire in 15 minutes.</p>
+  </div>
+</body>
+</html>
