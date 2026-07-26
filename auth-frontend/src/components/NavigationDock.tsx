@@ -3,21 +3,25 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTheme } from "next-themes";
-import { LayoutDashboard, TrendingUp, Settings, LogOut, Moon, Sun } from 'lucide-react';
+import { LayoutDashboard, TrendingUp, Settings, LogOut, Moon, Sun, Loader2 } from 'lucide-react';
 import Dock from '@/components/foundations/Dock';
 
 export default function NavigationDock() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    router.push('/login');
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      localStorage.removeItem('token');
+      router.push('/login');
+    }, 600);
   };
 
   const items = [
@@ -29,7 +33,11 @@ export default function NavigationDock() {
       label: 'Toggle Theme', 
       onClick: () => setTheme(theme === "dark" ? "light" : "dark") 
     },
-    { icon: <LogOut size={22} className="text-red-400" />, label: 'Sign Out', onClick: handleLogout },
+    { 
+      icon: isLoggingOut ? <Loader2 size={22} className="text-red-400 animate-spin" /> : <LogOut size={22} className="text-red-400" />, 
+      label: isLoggingOut ? 'Signing out...' : 'Sign Out', 
+      onClick: handleLogout 
+    },
   ];
 
   return (

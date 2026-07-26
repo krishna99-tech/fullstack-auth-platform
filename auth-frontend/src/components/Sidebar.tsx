@@ -12,7 +12,8 @@ import {
   LogOut,
   User,
   Moon,
-  Sun
+  Sun,
+  Loader2
 } from 'lucide-react';
 
 import {
@@ -50,6 +51,7 @@ export default function AppSidebar() {
   const [profile, setProfile] = useState<{ email: string; id: string } | null>(null);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -67,8 +69,11 @@ export default function AppSidebar() {
   }, []);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    router.push('/login');
+    setIsLoggingOut(true);
+    setTimeout(() => {
+      localStorage.removeItem('token');
+      router.push('/login');
+    }, 600);
   };
 
   return (
@@ -133,8 +138,8 @@ export default function AppSidebar() {
           
           <SidebarMenuItem>
             <SidebarMenuButton onClick={handleLogout} tooltip="Sign Out" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
-              <LogOut />
-              <span>Sign Out</span>
+              {isLoggingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
+              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
 

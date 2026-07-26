@@ -159,15 +159,12 @@ exports.login = async (req, res) => {
       }
     });
 
-    // Send login alert email if user has notifications enabled
+    // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-      try {
-        const location = await getLocationFromIP(ipAddress);
-        await sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: false });
-      } catch (emailError) {
-        console.error('Login alert email error:', emailError);
-      }
+      getLocationFromIP(ipAddress)
+        .then(location => sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: false }))
+        .catch(emailError => console.error('Login alert email error:', emailError));
     }
 
     res.json({ token, user: { id: user.id, email: user.email } });
@@ -265,15 +262,12 @@ exports.verifyMfaLogin = async (req, res) => {
       }
     });
 
-    // Send login alert email if user has notifications enabled
+    // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-      try {
-        const location = await getLocationFromIP(ipAddress);
-        await sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: true });
-      } catch (emailError) {
-        console.error('MFA login alert email error:', emailError);
-      }
+      getLocationFromIP(ipAddress)
+        .then(location => sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: true }))
+        .catch(emailError => console.error('MFA login alert email error:', emailError));
     }
 
     res.json({ message: 'Login successful', token, user: { id: user.id, email: user.email } });
