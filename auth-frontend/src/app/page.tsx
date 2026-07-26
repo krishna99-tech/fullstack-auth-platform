@@ -3,6 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { RatingBadge } from "@/components/foundations/rating-badge";
+import TrueFocus from '@/components/foundations/TrueFocus';
 
 export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -51,8 +53,19 @@ export default function Home() {
           Authentication Perfected
         </div>
         
-        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl text-gray-900 dark:text-white">
-          Secure access, <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500">beautifully designed.</span>
+        <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-8 max-w-4xl text-gray-900 dark:text-white flex flex-col md:flex-row items-center justify-center gap-3 md:gap-4 flex-wrap">
+          <span>Secure access,</span>
+          <div className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-purple-500 to-indigo-500">
+            <TrueFocus 
+              sentence="beautifully designed." 
+              manualMode={false}
+              blurAmount={4}
+              borderColor="#8b5cf6"
+              glowColor="rgba(139, 92, 246, 0.4)"
+              animationDuration={1}
+              pauseBetweenAnimations={1.5}
+            />
+          </div>
         </h1>
         
         <p className="text-gray-600 dark:text-gray-400 text-lg md:text-xl max-w-2xl mb-12 leading-relaxed">
@@ -60,11 +73,13 @@ export default function Home() {
           Featuring seamless Google OAuth, custom HTML emails, and a stunning UI.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center w-full max-w-md mb-10">
           <Link href="/signup" className="btn-primary text-lg w-full rounded-xl py-4 shadow-[0_0_40px_-10px_rgba(59,130,246,0.5)]">
             Start Building Free
           </Link>
         </div>
+
+        <RatingBadge rating={5} title="Best Design Tool" subtitle="2,000+ reviews" className="animate-fade-in-up delay-200" />
       </main>
 
       {/* Feature Grid */}

@@ -16,8 +16,31 @@ import {
   Phone,
   Mail,
   ShieldCheck,
-  Link as LinkIcon
+  Link as LinkIcon,
+  ArrowRight,
+  RefreshCcw,
+  Camera
 } from 'lucide-react';
+
+import { Card, CardHeader, CardTitle, CardContent, CardDescription, CardFooter } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Illustration } from "@/components/shared-assets/illustrations";
+import { MagicBento, MagicBentoCard } from "@/components/foundations/MagicBento";
+
+import type { Key as AriaKey } from "react-aria-components";
+import { Tabs as MinimalTabs } from "@/components/application/tabs/tabs";
+import { NativeSelect } from "@/components/base/select/select-native";
+
+const settingsTabs = [
+  { id: "general", label: "General Profile" },
+  { id: "security", label: "Security & Password" },
+  { id: "sessions", label: "Device Sessions" },
+  { id: "connected", label: "Connected Accounts" },
+];
 
 interface UserProfile {
   id: string;
@@ -43,10 +66,10 @@ interface Session {
 
 export default function SettingsPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'general' | 'security' | 'sessions' | 'connected'>('general');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [selectedTab, setSelectedTab] = useState<AriaKey>("general");
 
   // Profile update state
   const [editName, setEditName] = useState('');
@@ -341,127 +364,136 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading settings...</div>;
+    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading settings...</div>;
   }
 
   return (
-    <div className="p-8 md:p-12 max-w-6xl mx-auto w-full relative">
-      <div className="absolute top-1/4 right-0 w-[400px] h-[400px] bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-[100px] -z-10 pointer-events-none" />
+    <div className="p-8 md:p-12 max-w-6xl mx-auto w-full relative min-h-[90vh] animate-fade-in-up">
+      {/* Decorative Glow */}
+      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/10 dark:bg-blue-500/5 rounded-full blur-[120px] -z-10 pointer-events-none" />
 
+      {/* Header Section */}
       <div className="mb-10">
-        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white">
+        <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight">
           Account Settings
         </h1>
-        <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">
-          Manage your profile, security preferences, and active device sessions.
+        <p className="text-muted-foreground mt-2 text-lg">
+          Manage your personal information, security preferences, and active devices.
         </p>
       </div>
 
-      <div className="flex flex-col md:flex-row gap-8">
-        
-        {/* Left Sidebar Tabs */}
-        <div className="w-full md:w-64 shrink-0">
-          <nav className="flex md:flex-col gap-2 overflow-x-auto pb-4 md:pb-0">
-            <button
-              onClick={() => setActiveTab('general')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'general'
-                  ? 'bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <User className="w-5 h-5" />
-              General Profile
-            </button>
-            <button
-              onClick={() => setActiveTab('security')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'security'
-                  ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Key className="w-5 h-5" />
-              Security & Password
-            </button>
-            <button
-              onClick={() => setActiveTab('sessions')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'sessions'
-                  ? 'bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <Monitor className="w-5 h-5" />
-              Device Sessions
-            </button>
-            <button
-              onClick={() => setActiveTab('connected')}
-              className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
-                activeTab === 'connected'
-                  ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-black/5 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <LinkIcon className="w-5 h-5" />
-              Connected Accounts
-            </button>
-          </nav>
+      <Tabs value={selectedTab as string} onValueChange={(val) => setSelectedTab(val)} className="w-full">
+        <div className="mb-8">
+          <NativeSelect
+            size="sm"
+            aria-label="Tabs"
+            value={selectedTab as string}
+            onChange={(event) => setSelectedTab(event.target.value)}
+            options={settingsTabs.map((tab) => ({ label: tab.label, value: tab.id }))}
+            className="w-full md:hidden"
+          />
+          <MinimalTabs selectedKey={selectedTab} onSelectionChange={setSelectedTab} className="w-max max-md:hidden">
+            <MinimalTabs.List type="button-minimal" items={settingsTabs}>
+              {(tab) => <MinimalTabs.Item {...tab} />}
+            </MinimalTabs.List>
+          </MinimalTabs>
         </div>
 
-        {/* Right Content Area */}
-        <div className="flex-1">
-          
-          {/* GENERAL TAB */}
-          {activeTab === 'general' && (
-            <div className="space-y-6 animate-fade-in-up">
-              <div className="glass-card overflow-hidden">
-                <div className="p-6 border-b border-surface-border">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <SettingsIcon className="w-5 h-5 text-blue-500" />
-                    Profile Details
-                  </h2>
+        {/* GENERAL TAB */}
+        <TabsContent value="general" className="space-y-6 mt-6">
+          <MagicBento enableSpotlight={true} spotlightRadius={300} glowColor="59, 130, 246" className="w-full gap-6 grid-cols-1 md:grid-cols-3">
+            {/* Top Stat Row */}
+            <MagicBentoCard className="col-span-1 p-6 flex flex-col justify-center h-40" enableStars={true} particleCount={4} glowColor="59, 130, 246">
+              <div className="flex flex-col justify-center h-full z-10 relative">
+                <div className="flex items-center justify-between mb-4">
+                  <Illustration type="box" size="sm" variant="default" />
                 </div>
-                <div className="p-6">
+                <span className="text-sm font-medium text-muted-foreground mb-1 block">Account ID</span>
+                <span className="font-mono text-sm truncate block">{profile?.id || 'N/A'}</span>
+              </div>
+            </MagicBentoCard>
+            <MagicBentoCard className="col-span-1 p-6 flex flex-col justify-center h-40" enableTilt={true} glowColor="16, 185, 129">
+              <div className="flex flex-col justify-center h-full z-10 relative">
+                <div className="flex items-center justify-between mb-4">
+                  <Illustration type="shield" size="sm" variant={profile?.isVerified ? 'success' : 'warning'} />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground mb-1 block">Verification Status</span>
+                <div className={`flex items-center gap-2 font-bold ${profile?.isVerified ? 'text-emerald-500' : 'text-amber-500'}`}>
+                  {profile?.isVerified ? <CheckCircle2 className="w-5 h-5" /> : <AlertCircle className="w-5 h-5" />}
+                  {profile?.isVerified ? 'Verified Account' : 'Unverified Account'}
+                </div>
+              </div>
+            </MagicBentoCard>
+            <MagicBentoCard className="col-span-1 p-6 flex flex-col justify-center h-40" enableBorderGlow={true} glowColor="139, 92, 246">
+              <div className="flex flex-col justify-center h-full z-10 relative">
+                <div className="flex items-center justify-between mb-4">
+                  <Illustration type="users" size="sm" variant="primary" />
+                </div>
+                <span className="text-sm font-medium text-muted-foreground mb-1 block">Member Since</span>
+                <span className="font-bold block">
+                  {profile ? new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}
+                </span>
+              </div>
+            </MagicBentoCard>
+
+            {/* Profile Form Card */}
+            <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="59, 130, 246">
+              <div className="p-6 md:p-8 border-b border-border">
+                <h3 className="text-xl font-bold">Personal Information</h3>
+                <p className="text-sm text-muted-foreground mt-1">Update your photo and personal details here.</p>
+              </div>
+              <div className="p-6 md:p-8 z-10 relative">
+              <div className="flex flex-col md:flex-row gap-10">
+                {/* Avatar Section */}
+                <div className="flex flex-col items-center gap-4 shrink-0">
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-tr from-blue-500 to-purple-500 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-blue-500/20 relative group">
+                    {profile?.email ? profile.email.charAt(0).toUpperCase() : 'U'}
+                    
+                    {/* Hover Overlay */}
+                    <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm">
+                      <Camera className="w-8 h-8 text-white" />
+                    </div>
+                  </div>
+                  <Button variant="link" className="font-semibold text-blue-600 dark:text-blue-400">Change Picture</Button>
+                </div>
+
+                {/* Form Section */}
+                <div className="flex-1 w-full max-w-2xl">
                   {profileError && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-start gap-3 text-red-600 dark:text-red-400 text-sm">
+                    <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-destructive text-sm">
                       <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
                       <p>{profileError}</p>
                     </div>
                   )}
                   {profileMsg && (
-                    <div className="mb-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg flex items-start gap-3 text-green-600 dark:text-green-400 text-sm">
+                    <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-3 text-emerald-600 dark:text-emerald-400 text-sm">
                       <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
                       <p>{profileMsg}</p>
                     </div>
                   )}
 
-                  <form onSubmit={handleUpdateProfile} className="space-y-5 max-w-xl">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                  <form onSubmit={handleUpdateProfile} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <Label>Full Name</Label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <User className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <input
+                          <User className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
                             type="text"
-                            className="input-field pl-10"
+                            className="pl-11"
                             placeholder="John Doe"
                             value={editName}
                             onChange={(e) => setEditName(e.target.value)}
                           />
                         </div>
                       </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                      <div className="space-y-2">
+                        <Label>Phone Number</Label>
                         <div className="relative">
-                          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Phone className="h-4 w-4 text-gray-400" />
-                          </div>
-                          <input
+                          <Phone className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input
                             type="tel"
-                            className="input-field pl-10"
+                            className="pl-11"
                             placeholder="+1 (555) 000-0000"
                             value={editPhone}
                             onChange={(e) => setEditPhone(e.target.value)}
@@ -470,354 +502,383 @@ export default function SettingsPage() {
                       </div>
                     </div>
                     
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+                    <div className="space-y-2">
+                      <Label>Email Address</Label>
                       <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                          <Mail className="h-4 w-4 text-gray-400" />
-                        </div>
-                        <input
+                        <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                        <Input
                           type="email"
-                          className="input-field pl-10"
+                          className="pl-11"
                           value={editEmail}
                           onChange={(e) => setEditEmail(e.target.value)}
                           required
                         />
                       </div>
-                      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      <p className="text-xs text-muted-foreground pl-1">
                         If you change your email, you will need to re-verify your account.
                       </p>
                     </div>
 
-                    <div className="pt-4 border-t border-surface-border">
-                      <button 
+                    <div className="pt-6 mt-6 border-t flex justify-end">
+                      <Button 
                         type="submit" 
-                        className="btn-primary py-2.5 px-6 rounded-lg text-sm font-medium disabled:opacity-50"
                         disabled={isUpdatingProfile || (editName === (profile?.name || '') && editPhone === (profile?.phoneNumber || '') && editEmail === profile?.email)}
+                        className="px-8"
                       >
-                        {isUpdatingProfile ? 'Saving...' : 'Save Changes'}
-                      </button>
+                        {isUpdatingProfile ? (
+                          <><RefreshCcw className="w-4 h-4 animate-spin mr-2" /> Saving...</>
+                        ) : 'Save Changes'}
+                      </Button>
                     </div>
                   </form>
                 </div>
               </div>
+            </div>
+            </MagicBentoCard>
+          </MagicBento>
+        </TabsContent>
 
-              {/* Read Only Status Card */}
-              <div className="glass-card overflow-hidden p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Account ID</label>
-                  <div className="text-gray-900 dark:text-white font-mono text-sm truncate bg-black/5 dark:bg-white/5 p-1.5 rounded">
-                    {profile?.id || 'N/A'}
-                  </div>
+        {/* SECURITY TAB */}
+        <TabsContent value="security" className="space-y-6 mt-6">
+          <MagicBento enableSpotlight={true} spotlightRadius={300} glowColor="16, 185, 129" className="w-full gap-6">
+          {/* Password Card */}
+          <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="147, 51, 234">
+            <div className="p-6 md:p-8 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-xl text-purple-600 dark:text-purple-400">
+                  <Key className="w-6 h-6" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Verification Status</label>
-                  <div className={`flex items-center gap-2 font-medium ${profile?.isVerified ? 'text-green-500' : 'text-orange-500'}`}>
-                    {profile?.isVerified ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
-                    {profile?.isVerified ? 'Verified' : 'Unverified'}
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">Member Since</label>
-                  <div className="text-gray-900 dark:text-white font-medium">
-                    {profile ? new Date(profile.createdAt).toLocaleDateString() : 'N/A'}
-                  </div>
+                  <h3 className="text-xl font-bold">Change Password</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Ensure your account is using a long, random password to stay secure.</p>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* SECURITY TAB */}
-          {activeTab === 'security' && (
-            <div className="space-y-6 animate-fade-in-up">
-              <div className="glass-card overflow-hidden">
-                <div className="p-6 border-b border-surface-border">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Key className="w-5 h-5 text-purple-500" />
-                    Change Password
-                  </h2>
+            <div className="p-6 md:p-8 z-10 relative">
+              {pwdError && (
+                <div className="mb-6 p-4 bg-destructive/10 border border-destructive/20 rounded-xl flex items-start gap-3 text-destructive text-sm">
+                  <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p>{pwdError}</p>
                 </div>
-                <div className="p-6">
-                  {pwdError && (
-                    <div className="mb-6 p-4 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 rounded-lg flex items-start gap-3 text-red-600 dark:text-red-400 text-sm">
-                      <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                      <p>{pwdError}</p>
-                    </div>
-                  )}
-                  {pwdMsg && (
-                    <div className="mb-6 p-4 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/20 rounded-lg flex items-start gap-3 text-green-600 dark:text-green-400 text-sm">
-                      <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
-                      <p>{pwdMsg}</p>
-                    </div>
-                  )}
+              )}
+              {pwdMsg && (
+                <div className="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-xl flex items-start gap-3 text-emerald-600 dark:text-emerald-400 text-sm">
+                  <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
+                  <p>{pwdMsg}</p>
+                </div>
+              )}
+              
+              <form onSubmit={handleChangePassword} className="space-y-5 max-w-xl">
+                <div className="space-y-2">
+                  <Label>Current Password</Label>
+                  <Input
+                    type="password"
+                    placeholder="••••••••"
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                  <div className="space-y-2">
+                    <Label>New Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Confirm New Password</Label>
+                    <Input
+                      type="password"
+                      placeholder="••••••••"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+                <div className="pt-4">
+                  <Button 
+                    type="submit" 
+                    variant="default"
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20"
+                    disabled={isChangingPwd || !currentPassword || !newPassword || !confirmPassword}
+                  >
+                    {isChangingPwd ? 'Updating...' : 'Update Password'}
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </MagicBentoCard>
+
+          {/* MFA Section */}
+          <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="59, 130, 246">
+            <div className="p-6 md:p-8 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-blue-100 dark:bg-blue-500/20 rounded-xl text-blue-600 dark:text-blue-400">
+                  <ShieldCheck className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Two-Factor Authentication (2FA)</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Add an extra layer of security to your account using Google Authenticator or Authy.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 md:p-8 z-10 relative">
+              {profile?.mfaEnabled ? (
+                <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-emerald-500/10 rounded-2xl border border-emerald-500/20 gap-4">
+                  <div>
+                    <h4 className="text-lg font-bold text-emerald-600 flex items-center gap-2">
+                      <CheckCircle2 className="w-5 h-5" /> 2FA is currently enabled
+                    </h4>
+                    <p className="text-sm text-emerald-600 mt-1 opacity-80">Your account is protected by an additional security layer.</p>
+                  </div>
+                  <Button 
+                    variant="destructive"
+                    onClick={handleDisableMfa}
+                    disabled={mfaLoading}
+                  >
+                    Disable 2FA
+                  </Button>
+                </div>
+              ) : mfaSetupQr ? (
+                <div className="max-w-md mx-auto p-8 bg-muted rounded-2xl border flex flex-col items-center gap-6">
+                  <div className="text-center">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold mb-3">1</span>
+                    <p className="text-sm font-medium">Scan this QR code with your Authenticator App</p>
+                  </div>
                   
-                  <form onSubmit={handleChangePassword} className="space-y-5 max-w-md">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Current Password</label>
-                      <input
-                        type="password"
-                        className="input-field"
-                        placeholder="••••••••"
-                        value={currentPassword}
-                        onChange={(e) => setCurrentPassword(e.target.value)}
-                        required
+                  <div className="p-4 bg-white rounded-2xl shadow-sm border">
+                    <img src={mfaSetupQr} alt="MFA QR Code" className="w-48 h-48" />
+                  </div>
+                  
+                  <div className="text-center w-full">
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-500/20 text-blue-600 dark:text-blue-400 font-bold mb-3">2</span>
+                    <p className="text-sm font-medium mb-4">Enter the 6-digit code below</p>
+                    
+                    <div className="flex gap-3 justify-center w-full">
+                      <Input
+                        type="text"
+                        maxLength={6}
+                        placeholder="000000"
+                        value={mfaCode}
+                        onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                        className="w-32 text-center tracking-[0.5em] font-mono font-bold text-lg"
                       />
+                      <Button 
+                        onClick={handleVerifyMfa}
+                        disabled={mfaCode.length !== 6 || mfaLoading}
+                        className="bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-500/20"
+                      >
+                        Verify
+                      </Button>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Password</label>
-                      <input
-                        type="password"
-                        className="input-field"
-                        placeholder="••••••••"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm New Password</label>
-                      <input
-                        type="password"
-                        className="input-field"
-                        placeholder="••••••••"
-                        value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
-                        minLength={6}
-                      />
-                    </div>
-                    <button 
-                      type="submit" 
-                      className="btn-primary py-2.5 px-6 rounded-lg text-sm font-medium disabled:opacity-50"
-                      disabled={isChangingPwd}
-                    >
-                      {isChangingPwd ? 'Updating...' : 'Update Password'}
-                    </button>
-                  </form>
+                  </div>
+                  <Button variant="ghost" onClick={() => setMfaSetupQr('')} className="mt-2">
+                    Cancel Setup
+                  </Button>
                 </div>
-              </div>
+              ) : (
+                <div className="flex flex-col md:flex-row md:items-center justify-between p-6 bg-muted/50 rounded-2xl border gap-4">
+                  <div>
+                    <h4 className="font-bold">Authenticator App</h4>
+                    <p className="text-sm text-muted-foreground mt-1">Use an app like Google Authenticator or Authy to generate secure codes.</p>
+                  </div>
+                  <Button 
+                    onClick={handleSetupMfa}
+                    disabled={mfaLoading}
+                  >
+                    Enable 2FA
+                  </Button>
+                </div>
+              )}
+            </div>
+          </MagicBentoCard>
+          </MagicBento>
+        </TabsContent>
 
-              {/* MFA Section */}
-              <div className="glass-card overflow-hidden mt-6">
-                <div className="p-6 border-b border-surface-border">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-purple-500" />
-                    Two-Factor Authentication (2FA)
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Add an extra layer of security to your account using Google Authenticator.
-                  </p>
+        {/* SESSIONS TAB */}
+        <TabsContent value="sessions" className="space-y-6 mt-6">
+          <MagicBento enableSpotlight={true} spotlightRadius={300} glowColor="16, 185, 129" className="w-full gap-6">
+          <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="16, 185, 129">
+            <div className="p-6 md:p-8 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-xl text-emerald-600 dark:text-emerald-400">
+                  <Monitor className="w-6 h-6" />
                 </div>
-                <div className="p-6 space-y-4">
-                  {profile?.mfaEnabled ? (
-                    <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-500/10 rounded-xl border border-green-200 dark:border-green-500/20">
-                      <div>
-                        <h4 className="font-medium text-green-800 dark:text-green-400">2FA is currently enabled</h4>
-                        <p className="text-sm text-green-600 dark:text-green-500 mt-1">Your account is highly secure.</p>
-                      </div>
-                      <button 
-                        onClick={handleDisableMfa}
-                        disabled={mfaLoading}
-                        className="px-4 py-2 text-sm font-medium text-red-600 bg-red-50 dark:bg-red-500/10 rounded-lg hover:bg-red-100 transition-colors"
-                      >
-                        Disable 2FA
-                      </button>
-                    </div>
-                  ) : mfaSetupQr ? (
-                    <div className="flex flex-col items-center space-y-4 p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-surface-border">
-                      <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                        1. Scan this QR code with Google Authenticator or Authy
-                      </p>
-                      <img src={mfaSetupQr} alt="MFA QR Code" className="w-40 h-40 rounded bg-white p-2 shadow-sm" />
-                      <p className="text-sm text-gray-600 dark:text-gray-300 text-center">
-                        2. Enter the 6-digit code below
-                      </p>
-                      <div className="flex gap-2">
-                        <input
-                          type="text"
-                          maxLength={6}
-                          placeholder="000000"
-                          value={mfaCode}
-                          onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-                          className="input-field text-center tracking-widest font-mono w-32"
-                        />
-                        <button 
-                          onClick={handleVerifyMfa}
-                          disabled={mfaCode.length !== 6 || mfaLoading}
-                          className="btn-primary"
-                        >
-                          Verify
-                        </button>
-                      </div>
-                      <button onClick={() => setMfaSetupQr('')} className="text-xs text-gray-500 hover:underline">Cancel</button>
-                    </div>
-                  ) : (
-                    <div className="flex items-center justify-between p-4 bg-black/5 dark:bg-white/5 rounded-xl border border-surface-border">
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">Authenticator App</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Use an app like Google Authenticator or Authy to generate secure codes.</p>
-                      </div>
-                      <button 
-                        onClick={handleSetupMfa}
-                        disabled={mfaLoading}
-                        className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg hover:bg-gray-800 transition-colors"
-                      >
-                        Enable 2FA
-                      </button>
-                    </div>
-                  )}
+                <div>
+                  <h3 className="text-xl font-bold">Active Device Sessions</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Review all devices currently logged into your account. Revoke access if you don't recognize them.
+                  </p>
                 </div>
               </div>
             </div>
-          )}
-
-          {/* SESSIONS TAB */}
-          {activeTab === 'sessions' && (
-            <div className="space-y-6 animate-fade-in-up">
-              <div className="glass-card overflow-hidden">
-                <div className="p-6 border-b border-surface-border">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <Monitor className="w-5 h-5 text-indigo-500" />
-                    Active Device Sessions
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    If you see a device you don't recognize, revoke it immediately to sign it out.
-                  </p>
+            <div className="p-0 z-10 relative">
+              {sessions.length === 0 ? (
+                <div className="p-12 text-center flex flex-col items-center justify-center">
+                  <Monitor className="w-12 h-12 text-muted-foreground mb-4 opacity-20" />
+                  <p className="text-muted-foreground font-medium">No active sessions found.</p>
                 </div>
-                <div className="divide-y divide-surface-border">
-                  {sessions.length === 0 ? (
-                    <div className="p-6 text-center text-gray-500">No active sessions found.</div>
-                  ) : (
-                    sessions.map((session) => {
-                      const isMobile = session.device.toLowerCase().includes('iphone') || session.device.toLowerCase().includes('android');
-                      
-                      return (
-                        <div key={session.id} className="p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                          <div className="flex items-start gap-4">
-                            <div className={`p-3 rounded-xl ${session.isCurrent ? 'bg-green-100 text-green-600 dark:bg-green-500/10 dark:text-green-500' : 'bg-gray-100 text-gray-500 dark:bg-white/5 dark:text-gray-400'}`}>
-                              {isMobile ? <Smartphone className="w-6 h-6" /> : <Monitor className="w-6 h-6" />}
-                            </div>
-                            <div>
-                              <h4 className="text-gray-900 dark:text-white font-medium flex items-center gap-2">
-                                {parseUA(session.device)}
-                                {session.isCurrent && (
-                                  <span className="text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 px-2 py-0.5 rounded-full">
-                                    This Device
-                                  </span>
-                                )}
-                              </h4>
-                              <div className="flex items-center gap-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
-                                <span className="flex items-center gap-1">
-                                  <Globe className="w-3 h-3" /> {session.ipAddress || 'Unknown IP'}
-                                </span>
-                                <span className="w-1 h-1 rounded-full bg-gray-300 dark:bg-gray-700"></span>
-                                <span>Last active: {new Date(session.lastActive).toLocaleString()}</span>
-                              </div>
+              ) : (
+                <div className="divide-y divide-border">
+                  {sessions.map((session) => {
+                    const isMobile = session.device.toLowerCase().includes('iphone') || session.device.toLowerCase().includes('android');
+                    
+                    return (
+                      <div key={session.id} className="p-6 md:p-8 flex flex-col sm:flex-row sm:items-center justify-between gap-6 hover:bg-muted/50 transition-colors group">
+                        <div className="flex items-start gap-5">
+                          <div className={`p-4 rounded-2xl ${session.isCurrent ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-muted text-muted-foreground'}`}>
+                            {isMobile ? <Smartphone className="w-7 h-7" /> : <Monitor className="w-7 h-7" />}
+                          </div>
+                          <div className="pt-1">
+                            <h4 className="text-lg font-bold flex items-center gap-3">
+                              {parseUA(session.device)}
+                              {session.isCurrent && (
+                                <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold uppercase tracking-wider text-[10px]">
+                                  Current Device
+                                </Badge>
+                              )}
+                            </h4>
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-sm font-medium text-muted-foreground">
+                              <span className="flex items-center gap-1.5">
+                                <Globe className="w-4 h-4 opacity-70" /> {session.ipAddress || 'Unknown IP'}
+                              </span>
+                              <span className="w-1.5 h-1.5 rounded-full bg-border hidden sm:block"></span>
+                              <span>Last active: {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
                             </div>
                           </div>
-                          {!session.isCurrent && (
-                            <button 
-                              onClick={() => handleRevokeSession(session.id)}
-                              className="self-start sm:self-center flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 rounded-lg hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
-                            >
-                              <LogOut className="w-4 h-4" />
-                              Revoke
-                            </button>
-                          )}
                         </div>
-                      );
-                    })
+                        {!session.isCurrent && (
+                          <Button 
+                            variant="destructive"
+                            onClick={() => handleRevokeSession(session.id)}
+                            className="self-start sm:self-center flex items-center gap-2 opacity-100 sm:opacity-0 group-hover:opacity-100 focus:opacity-100 transition-opacity"
+                          >
+                            <LogOut className="w-4 h-4" />
+                            Revoke Access
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </MagicBentoCard>
+          </MagicBento>
+        </TabsContent>
+
+        {/* CONNECTED ACCOUNTS TAB */}
+        <TabsContent value="connected" className="space-y-6 mt-6">
+          <MagicBento enableSpotlight={true} spotlightRadius={300} glowColor="16, 185, 129" className="w-full gap-6">
+          <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="236, 72, 153">
+            <div className="p-6 md:p-8 border-b border-border">
+              <div className="flex items-center gap-3">
+                <div className="p-3 bg-pink-100 dark:bg-pink-500/20 rounded-xl text-pink-600 dark:text-pink-400">
+                  <LinkIcon className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold">Connected Accounts</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Link your social accounts for seamless, password-less logins across all your devices.
+                  </p>
+                </div>
+              </div>
+            </div>
+            <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 z-10 relative">
+              {/* Google Card */}
+              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors h-48">
+                <div className="flex items-start justify-between">
+                  <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-border">
+                    <svg className="w-7 h-7" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                    </svg>
+                  </div>
+                  {profile?.hasGoogle ? (
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="font-bold">Not Linked</Badge>
+                  )}
+                </div>
+                
+                <div className="flex items-end justify-between mt-4">
+                  <div>
+                    <h3 className="font-bold">Google</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">Sign in with Google</p>
+                  </div>
+                  {profile?.hasGoogle ? (
+                    <Button variant="ghost" size="sm" onClick={() => handleUnlinkProvider('google')} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                      Unlink
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => {
+                      const token = localStorage.getItem('token');
+                      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/google?token=${token}`;
+                    }}>
+                      Connect
+                    </Button>
                   )}
                 </div>
               </div>
-            </div>
-          )}
 
-          {/* CONNECTED ACCOUNTS TAB */}
-          {activeTab === 'connected' && (
-            <div className="space-y-6 animate-fade-in-up">
-              <div className="glass-card overflow-hidden">
-                <div className="p-6 border-b border-surface-border">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                    <LinkIcon className="w-5 h-5 text-emerald-500" />
-                    Connected Accounts
-                  </h2>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    Connect social accounts to easily log in without a password.
-                  </p>
+              {/* GitHub Card */}
+              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors h-48">
+                <div className="flex items-start justify-between">
+                  <div className="w-14 h-14 bg-[#24292e] text-white rounded-2xl flex items-center justify-center shadow-sm">
+                    <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
+                    </svg>
+                  </div>
+                  {profile?.hasGithub ? (
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      Connected
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="font-bold">Not Linked</Badge>
+                  )}
                 </div>
                 
-                <div className="p-6 space-y-4">
-                  {/* Google */}
-                  <div className="flex items-center justify-between p-4 border border-surface-border rounded-xl bg-black/5 dark:bg-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <svg className="w-5 h-5" viewBox="0 0 24 24">
-                          <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
-                          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
-                          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
-                          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">Google</h4>
-                        <p className="text-sm text-gray-500">{profile?.hasGoogle ? 'Connected' : 'Not connected'}</p>
-                      </div>
-                    </div>
-                    {profile?.hasGoogle ? (
-                      <button 
-                        onClick={() => handleUnlinkProvider('google')}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm"
-                      >
-                        Disconnect
-                      </button>
-                    ) : (
-                      <a 
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/auth/google?state=${localStorage.getItem('token')}`}
-                        className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-                      >
-                        Connect
-                      </a>
-                    )}
+                <div className="flex items-end justify-between mt-4">
+                  <div>
+                    <h3 className="font-bold">GitHub</h3>
+                    <p className="text-sm text-muted-foreground mt-0.5">Sign in with GitHub</p>
                   </div>
-
-                  {/* GitHub */}
-                  <div className="flex items-center justify-between p-4 border border-surface-border rounded-xl bg-black/5 dark:bg-white/5">
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-sm">
-                        <svg className="w-5 h-5 text-gray-900" viewBox="0 0 24 24" fill="currentColor">
-                          <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.418 22 12c0-5.523-4.477-10-10-10z" />
-                        </svg>
-                      </div>
-                      <div>
-                        <h4 className="font-medium text-gray-900 dark:text-white">GitHub</h4>
-                        <p className="text-sm text-gray-500">{profile?.hasGithub ? 'Connected' : 'Not connected'}</p>
-                      </div>
-                    </div>
-                    {profile?.hasGithub ? (
-                      <button 
-                        onClick={() => handleUnlinkProvider('github')}
-                        className="px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm"
-                      >
-                        Disconnect
-                      </button>
-                    ) : (
-                      <a 
-                        href={`${process.env.NEXT_PUBLIC_API_URL}/auth/github?state=${localStorage.getItem('token')}`}
-                        className="px-4 py-2 text-sm font-medium text-white bg-gray-900 dark:bg-white dark:text-gray-900 rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-                      >
-                        Connect
-                      </a>
-                    )}
-                  </div>
+                  {profile?.hasGithub ? (
+                    <Button variant="ghost" size="sm" onClick={() => handleUnlinkProvider('github')} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                      Unlink
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => {
+                      const token = localStorage.getItem('token');
+                      window.location.href = `${process.env.NEXT_PUBLIC_API_URL}/auth/github?token=${token}`;
+                    }}>
+                      Connect
+                    </Button>
+                  )}
                 </div>
               </div>
+
             </div>
-          )}
-          
-        </div>
-      </div>
+          </MagicBentoCard>
+          </MagicBento>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

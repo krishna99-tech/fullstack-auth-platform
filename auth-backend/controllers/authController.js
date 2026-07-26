@@ -148,7 +148,7 @@ exports.login = async (req, res) => {
 
     // Record session in database
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
-    const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';
+    const ipAddress = (req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || 'Unknown IP').toString().split(',')[0].trim();
     
     await prisma.session.create({
       data: {
@@ -243,7 +243,7 @@ exports.verifyMfaLogin = async (req, res) => {
     );
 
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
-    const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';
+    const ipAddress = (req.headers['x-forwarded-for'] || req.ip || req.connection.remoteAddress || 'Unknown IP').toString().split(',')[0].trim();
 
     await prisma.session.create({
       data: {

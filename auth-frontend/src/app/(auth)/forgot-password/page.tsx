@@ -39,15 +39,28 @@ export default function ForgotPassword() {
   return (
     <>
       <h2 className="text-3xl font-bold mb-2">Reset Password</h2>
-      <p className="text-gray-600 dark:text-gray-400 mb-8">Enter your email and we'll send you a reset link</p>
+      <p className="text-gray-600 dark:text-gray-400 mb-8">
+        Enter your email and we&apos;ll send you a reset link
+      </p>
       
-      {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">{error}</div>}
-      {message && <div className="bg-green-500/10 border border-green-500 text-green-500 p-3 rounded mb-4 text-sm">{message}</div>}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">
+          {error}
+        </div>
+      )}
+      
+      {message && (
+        <div className="bg-green-500/10 border border-green-500 text-green-500 p-3 rounded mb-4 text-sm">
+          {message}
+        </div>
+      )}
 
       {!message && (
         <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email Address</label>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              Email Address
+            </label>
             <input
               type="email"
               className="input-field"

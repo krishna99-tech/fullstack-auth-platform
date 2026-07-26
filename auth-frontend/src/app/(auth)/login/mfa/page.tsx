@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 
 function MfaForm() {
   const router = useRouter();
@@ -54,18 +56,21 @@ function MfaForm() {
       {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">{error}</div>}
       
       <form onSubmit={handleVerifyMfa} className="space-y-5 animate-fade-in-up">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">6-Digit Code</label>
-          <input
-            type="text"
-            maxLength={6}
-            className="input-field text-center tracking-widest font-mono text-2xl py-4"
-            placeholder="000000"
-            value={mfaCode}
-            onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
-            required
-            autoFocus
-          />
+        <div className="flex flex-col items-center">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 self-start">6-Digit Code</label>
+          <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={mfaCode} onChange={setMfaCode} autoFocus>
+            <InputOTPGroup>
+              <InputOTPSlot index={0} className="w-12 h-14 text-xl" />
+              <InputOTPSlot index={1} className="w-12 h-14 text-xl" />
+              <InputOTPSlot index={2} className="w-12 h-14 text-xl" />
+            </InputOTPGroup>
+            <InputOTPSeparator />
+            <InputOTPGroup>
+              <InputOTPSlot index={3} className="w-12 h-14 text-xl" />
+              <InputOTPSlot index={4} className="w-12 h-14 text-xl" />
+              <InputOTPSlot index={5} className="w-12 h-14 text-xl" />
+            </InputOTPGroup>
+          </InputOTP>
         </div>
         <button type="submit" className="btn-primary w-full mt-6" disabled={loading || mfaCode.length !== 6}>
           {loading ? 'Verifying...' : 'Verify Code'}

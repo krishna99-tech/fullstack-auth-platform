@@ -3,6 +3,8 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { REGEXP_ONLY_DIGITS } from "input-otp";
+import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 
 function VerifyEmailContent() {
   const searchParams = useSearchParams();
@@ -68,17 +70,21 @@ function VerifyEmailContent() {
               readOnly={!!emailParam} // Make read-only if it came from the URL
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Verification Code</label>
-            <input
-              type="text"
-              className="input-field text-center text-2xl tracking-[0.5em] font-mono"
-              placeholder="000000"
-              value={token}
-              onChange={(e) => setToken(e.target.value.replace(/\D/g, '').slice(0, 6))}
-              required
-              maxLength={6}
-            />
+          <div className="flex flex-col items-center">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-4 self-start">Verification Code</label>
+            <InputOTP maxLength={6} pattern={REGEXP_ONLY_DIGITS} value={token} onChange={setToken}>
+              <InputOTPGroup>
+                <InputOTPSlot index={0} className="w-12 h-14 text-xl" />
+                <InputOTPSlot index={1} className="w-12 h-14 text-xl" />
+                <InputOTPSlot index={2} className="w-12 h-14 text-xl" />
+              </InputOTPGroup>
+              <InputOTPSeparator />
+              <InputOTPGroup>
+                <InputOTPSlot index={3} className="w-12 h-14 text-xl" />
+                <InputOTPSlot index={4} className="w-12 h-14 text-xl" />
+                <InputOTPSlot index={5} className="w-12 h-14 text-xl" />
+              </InputOTPGroup>
+            </InputOTP>
           </div>
           
           <button type="submit" className="btn-primary w-full mt-6" disabled={loading || token.length !== 6}>

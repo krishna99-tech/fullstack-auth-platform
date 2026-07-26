@@ -1,4 +1,4 @@
-import { SidebarNavigationDualTier } from '@/components/SidebarNavigationDualTier';
+import NavigationDock from '@/components/NavigationDock';
 
 export default function DashboardLayout({
   children,
@@ -6,11 +6,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
-      <SidebarNavigationDualTier />
-      <main className="flex-1 overflow-y-auto">
+    <div className="relative min-h-screen flex flex-col pb-24">
+      <div className="flex flex-1 flex-col">
         {children}
-      </main>
+      </div>
+      <NavigationDock />
     </div>
   );
 }

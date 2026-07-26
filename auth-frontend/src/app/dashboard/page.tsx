@@ -2,7 +2,16 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, Activity, Users, Clock, ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ShieldCheck, ArrowUpRight, MonitorSmartphone, KeySquare, Clock } from 'lucide-react';
+import Link from 'next/link';
+
+import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
+import { Illustration } from "@/components/shared-assets/illustrations";
+import { MagicBento, MagicBentoCard } from "@/components/foundations/MagicBento";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -10,7 +19,7 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(null);
   const [sessions, setSessions] = useState<any[]>([]);
-  const [profile, setProfile] = useState<{ email: string } | null>(null);
+  const [profile, setProfile] = useState<{ email: string, isVerified?: boolean } | null>(null);
 
   useEffect(() => {
     const urlToken = searchParams.get('token');
@@ -50,7 +59,6 @@ export default function Dashboard() {
     }
   }, [router, searchParams]);
 
-  // Simple UA parser
   const parseUA = (ua: string) => {
     if (!ua) return 'Unknown Device';
     let os = 'Unknown OS';
@@ -72,11 +80,16 @@ export default function Dashboard() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading your workspace...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading your workspace...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto w-full relative">
+    <div className="p-8 md:p-12 max-w-7xl mx-auto w-full relative animate-fade-in-up">
       
       {/* Subtle Background Glow */}
       <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
@@ -85,86 +98,150 @@ export default function Dashboard() {
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
         <div>
-          <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-gray-900 dark:text-white capitalize">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight capitalize">
             Welcome back, {profile?.email ? profile.email.split('@')[0] : '...'}
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-2 text-lg">
+          <p className="text-muted-foreground mt-2 text-lg">
             Here's what's happening with your account today.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <button className="px-4 py-2 bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/10 transition-colors shadow-sm">
+          <Button variant="outline" className="rounded-xl shadow-sm">
             Export Report
-          </button>
-          <button className="btn-primary py-2 px-4 text-sm rounded-lg shadow-md">
+          </Button>
+          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "default" }), "rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white")}>
             Manage Security
-          </button>
+          </Link>
         </div>
       </div>
 
-      {/* Bento Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
-        
-        {/* Active Sessions Stat (Real Data) */}
-        <div className="glass-card p-6 flex flex-col hover:-translate-y-1 transition-transform duration-300">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Active Sessions</h3>
-            <div className="w-8 h-8 rounded-full bg-blue-500/10 text-blue-500 flex items-center justify-center">
-              <Activity className="w-4 h-4" />
-            </div>
-          </div>
-          <div className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{sessions.length || 1}</div>
-          <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-            Active devices
-          </div>
-        </div>
-      </div>
+      {/* Magic Bento Section replacing the old layout */}
+      <div>
+        <div className="w-full flex justify-center">
+          <MagicBento 
+            enableSpotlight={true}
+            spotlightRadius={300}
+            glowColor="59, 130, 246"
+            className="w-full gap-6"
+          >
+            {/* Active Sessions Stat */}
+            <MagicBentoCard className="col-span-1 p-6" enableStars={true} particleCount={8} glowColor="59, 130, 246">
+              <div className="flex flex-col h-full justify-between z-10 relative">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Active Sessions</span>
+                  <Illustration type="monitor" size="sm" variant="primary" />
+                </div>
+                <div>
+                  <div className="text-4xl font-extrabold mb-2 text-foreground">{sessions.length || 1}</div>
+                  <div className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
+                    <ArrowUpRight className="w-4 h-4" /> 
+                    <span>Securely connected</span>
+                  </div>
+                </div>
+              </div>
+            </MagicBentoCard>
 
-      {/* Main Content Area (Recent Activity Table) */}
-      <div className="glass-card overflow-hidden">
-        <div className="p-6 border-b border-surface-border flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Active Sessions</h2>
-          <button onClick={() => router.push('/dashboard/settings')} className="text-sm font-medium text-primary hover:underline">Manage All</button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm">
-            <thead className="bg-black/5 dark:bg-white/5 text-gray-500 dark:text-gray-400">
-              <tr>
-                <th className="px-6 py-4 font-medium">Device</th>
-                <th className="px-6 py-4 font-medium">IP Address</th>
-                <th className="px-6 py-4 font-medium">Last Active</th>
-                <th className="px-6 py-4 font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-surface-border text-gray-700 dark:text-gray-300">
-              {sessions.map((session) => (
-                <tr key={session.id} className="hover:bg-black/5 dark:hover:bg-white/5 transition-colors">
-                  <td className="px-6 py-4 font-medium flex items-center gap-2">
-                    {parseUA(session.device)}
-                    {session.isCurrent && (
-                      <span className="text-xs font-semibold bg-green-100 text-green-700 dark:bg-green-500/20 dark:text-green-400 px-2 py-0.5 rounded-full">
-                        Current
-                      </span>
-                    )}
-                  </td>
-                  <td className="px-6 py-4">{session.ipAddress || 'Unknown IP'}</td>
-                  <td className="px-6 py-4 text-gray-500 dark:text-gray-400">{new Date(session.lastActive).toLocaleString()}</td>
-                  <td className="px-6 py-4">
-                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-500/10 dark:text-green-400">
-                      Active
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {sessions.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-6 py-8 text-center text-gray-500">
-                    No session data available.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+            {/* Account Security Stat */}
+            <MagicBentoCard className="col-span-1 p-6" enableBorderGlow={true} glowColor="16, 185, 129">
+              <div className="flex flex-col h-full justify-between z-10 relative">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Security Status</span>
+                  <Illustration type="shield-check" size="sm" variant="success" />
+                </div>
+                <div>
+                  <div className="text-2xl font-bold mb-3 mt-2 text-foreground">
+                    {profile?.isVerified ? 'Protected' : 'Action Required'}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                      <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
+                    </div>
+                    <span>{profile?.isVerified ? 'Good' : 'Weak'}</span>
+                  </div>
+                </div>
+              </div>
+            </MagicBentoCard>
+
+            {/* Recent Activity Stat */}
+            <MagicBentoCard className="col-span-1 p-6 lg:col-span-2" enableMagnetism={true} enableTilt={true} glowColor="245, 158, 11">
+              <div className="flex flex-col h-full justify-between z-10 relative pointer-events-none">
+                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <span className="text-sm font-medium text-muted-foreground">Authentication Events</span>
+                  <Illustration type="key" size="sm" variant="warning" />
+                </div>
+                <div>
+                  <div className="text-4xl font-extrabold mb-2 text-foreground">12</div>
+                  <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                    <Clock className="w-4 h-4" /> 
+                    <span>Logins in last 30 days</span>
+                  </div>
+                </div>
+              </div>
+            </MagicBentoCard>
+
+            {/* Main Content Area (Recent Activity Table) */}
+            <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="59, 130, 246">
+              <div className="h-full z-10 relative flex flex-col">
+                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold text-foreground">Active Sessions</h2>
+                    <p className="text-sm text-muted-foreground mt-1">Review where your account is currently logged in.</p>
+                  </div>
+                  <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0")}>
+                    Manage
+                  </Link>
+                </div>
+                <div className="overflow-x-auto w-full">
+                  <Table>
+                    <TableHeader className="bg-muted/30">
+                      <TableRow className="border-border hover:bg-transparent">
+                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Device & Browser</TableHead>
+                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">IP Address</TableHead>
+                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Last Active</TableHead>
+                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-right text-muted-foreground">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {sessions.map((session) => (
+                        <TableRow key={session.id} className="hover:bg-muted/50 transition-colors group border-border">
+                          <TableCell className="px-6 md:px-8 py-5">
+                            <div className="flex items-center gap-3">
+                              <div className="p-2 bg-muted/50 rounded-lg text-muted-foreground group-hover:text-blue-500 group-hover:bg-blue-500/10 transition-colors">
+                                <MonitorSmartphone className="w-5 h-5" />
+                              </div>
+                              <div className="flex flex-col text-foreground">
+                                <span className="font-bold">{parseUA(session.device)}</span>
+                                {session.isCurrent && (
+                                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current Session</span>
+                                )}
+                              </div>
+                            </div>
+                          </TableCell>
+                          <TableCell className="px-6 md:px-8 py-5 font-medium text-foreground">{session.ipAddress || 'Unknown IP'}</TableCell>
+                          <TableCell className="px-6 md:px-8 py-5 text-muted-foreground font-medium">
+                            {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          </TableCell>
+                          <TableCell className="px-6 md:px-8 py-5 text-right">
+                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5 py-1 px-3">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                              Active
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                      {sessions.length === 0 && (
+                        <TableRow className="border-border hover:bg-transparent">
+                          <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground font-medium">
+                            No session data available.
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </MagicBentoCard>
+          </MagicBento>
         </div>
       </div>
       
