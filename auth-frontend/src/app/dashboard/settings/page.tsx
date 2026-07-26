@@ -34,12 +34,14 @@ import { MagicBento, MagicBentoCard } from "@/components/foundations/MagicBento"
 import type { Key as AriaKey } from "react-aria-components";
 import { Tabs as MinimalTabs } from "@/components/application/tabs/tabs";
 import { NativeSelect } from "@/components/base/select/select-native";
+import { SuccessCard } from "@/components/foundations/success-card";
 
 const settingsTabs = [
   { id: "general", label: "General Profile" },
   { id: "security", label: "Security & Password" },
   { id: "sessions", label: "Device Sessions" },
   { id: "connected", label: "Connected Accounts" },
+  { id: "notifications", label: "Notifications" },
 ];
 
 interface UserProfile {
@@ -53,6 +55,7 @@ interface UserProfile {
   hasGoogle?: boolean;
   hasGithub?: boolean;
   mfaEnabled?: boolean;
+  emailNotifications?: boolean;
 }
 
 interface Session {
@@ -79,6 +82,11 @@ export default function SettingsPage() {
   const [profileError, setProfileError] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
 
+  // Deletion modal state
+  const [deleteEmailConfirm, setDeleteEmailConfirm] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
+
   // Password change state
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -91,6 +99,8 @@ export default function SettingsPage() {
   const [mfaSetupQr, setMfaSetupQr] = useState('');
   const [mfaCode, setMfaCode] = useState('');
   const [mfaLoading, setMfaLoading] = useState(false);
+  const [isTogglingNotifications, setIsTogglingNotifications] = useState(false);
+  const [successData, setSuccessData] = useState<{ title: string; description: string; continueText?: string } | null>(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -253,7 +263,11 @@ export default function SettingsPage() {
       setMfaSetupQr('');
       setMfaCode('');
       setProfile(prev => prev ? { ...prev, mfaEnabled: true } : null);
-      alert('2FA Enabled Successfully!');
+      setSuccessData({
+        title: "2FA Enabled Successfully!",
+        description: "Your account is now protected with two-factor authentication. You will be required to enter a code from your authenticator app whenever you log in.",
+        continueText: "Back to Settings"
+      });
     } catch (err) {
       alert('Invalid code, please try again.');
     } finally {
@@ -272,7 +286,11 @@ export default function SettingsPage() {
       if (!res.ok) throw new Error('Failed to disable MFA');
       
       setProfile(prev => prev ? { ...prev, mfaEnabled: false } : null);
-      alert('2FA Disabled');
+      setSuccessData({
+        title: "2FA Disabled Successfully",
+        description: "Two-factor authentication has been turned off for your account.",
+        continueText: "Back to Settings"
+      });
     } catch (err) {
       alert('Error disabling 2FA');
     } finally {
@@ -336,10 +354,190 @@ export default function SettingsPage() {
           hasGithub: provider === 'github' ? false : prev.hasGithub
         };
       });
-      alert(`${provider} unlinked successfully`);
+      setSuccessData({
+        title: `${provider.charAt(0).toUpperCase() + provider.slice(1)} Unlinked Successfully`,
+        description: `Your ${provider} account has been unlinked from your profile.`,
+        continueText: "Back to Settings"
+      });
     } catch (err) {
       console.error(err);
       alert(`Error unlinking ${provider}`);
+    }
+  };
+
+  const handleToggleNotifications = async (checked: boolean) => {
+    setIsTogglingNotifications(true);
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        localStorage.removeItem('token');
+        router.push('/login?error=session_expired');
+        return;
+      }
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/preferences`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ emailNotifications: checked })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to update preferences');
+        return;
+      }
+      
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          emailNotifications: checked
+        };
+      });
+      
+      setSuccessData({
+        title: checked ? "Security Alerts Enabled" : "Security Alerts Disabled",
+        description: checked 
+          ? "You will now receive email notifications for account and security changes." 
+          : "You have opted out of email notification alerts.",
+        continueText: "Dismiss"
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Error updating notification preferences');
+    } finally {
+      setIsTogglingNotifications(false);
+    }
+  };
+
+  const handleToggleAccentColor = async (color: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        localStorage.removeItem('token');
+        router.push('/login?error=session_expired');
+        return;
+      }
+      
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/preferences`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ accentColor: color })
+      });
+      
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Failed to update accent color');
+        return;
+      }
+      
+      setProfile(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          accentColor: color
+        };
+      });
+    } catch (err) {
+      console.error(err);
+      alert('Error updating accent color preference');
+    }
+  };
+
+  const handleRevokeAllOtherSessions = async () => {
+    if (!confirm('Are you sure you want to log out of all other devices?')) return;
+    
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (res.status === 401) {
+        localStorage.removeItem('token');
+        router.push('/login?error=session_expired');
+        return;
+      }
+      
+      if (res.ok) {
+        setSessions(prev => prev.filter(s => s.isCurrent));
+        setSuccessData({
+          title: "Other Devices Revoked",
+          description: "All other active device sessions have been successfully terminated.",
+          continueText: "Dismiss"
+        });
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to revoke other sessions');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('An error occurred');
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (deleteEmailConfirm !== profile?.email) {
+      alert('Email confirmation does not match your account email.');
+      return;
+    }
+
+    try {
+      setIsDeletingAccount(true);
+      const token = localStorage.getItem('token');
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        localStorage.removeItem('token');
+        setShowDeleteModal(false);
+        setSuccessData({
+          title: "Account Deleted",
+          description: "Your account and all associated data have been permanently removed.",
+          continueText: "Go to Sign Up"
+        });
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete account');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting account');
+    } finally {
+      setIsDeletingAccount(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/resend-verification`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      const data = await res.json();
+      if (res.ok) {
+        setSuccessData({
+          title: "Verification Email Sent",
+          description: "A fresh verification code has been dispatched to your inbox. Please check your spam folder if it doesn't arrive shortly.",
+          continueText: "Dismiss"
+        });
+      } else {
+        alert(data.error || 'Failed to resend verification email');
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error sending verification code');
     }
   };
 
@@ -364,7 +562,25 @@ export default function SettingsPage() {
   };
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-muted-foreground">Loading settings...</div>;
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-background">
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading settings...</p>
+      </div>
+    );
+  }
+
+  if (successData) {
+    return (
+      <div className="min-h-[80vh] flex flex-col items-center justify-center p-4">
+        <SuccessCard
+          title={successData.title}
+          description={successData.description}
+          continueText={successData.continueText}
+          onContinue={() => setSuccessData(null)}
+        />
+      </div>
+    );
   }
 
   return (
@@ -519,11 +735,11 @@ export default function SettingsPage() {
                       </p>
                     </div>
 
-                    <div className="pt-6 mt-6 border-t flex justify-end">
+                    <div className="pt-6 mt-6 border-t flex flex-col sm:flex-row sm:justify-end">
                       <Button 
                         type="submit" 
                         disabled={isUpdatingProfile || (editName === (profile?.name || '') && editPhone === (profile?.phoneNumber || '') && editEmail === profile?.email)}
-                        className="px-8"
+                        className="px-8 w-full sm:w-auto"
                       >
                         {isUpdatingProfile ? (
                           <><RefreshCcw className="w-4 h-4 animate-spin mr-2" /> Saving...</>
@@ -603,11 +819,11 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
-                <div className="pt-4">
+                 <div className="pt-4 flex flex-col sm:flex-row">
                   <Button 
                     type="submit" 
                     variant="default"
-                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20"
+                    className="bg-purple-600 hover:bg-purple-700 text-white shadow-md shadow-purple-500/20 w-full sm:w-auto"
                     disabled={isChangingPwd || !currentPassword || !newPassword || !confirmPassword}
                   >
                     {isChangingPwd ? 'Updating...' : 'Update Password'}
@@ -796,7 +1012,7 @@ export default function SettingsPage() {
             </div>
             <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-2 gap-6 z-10 relative">
               {/* Google Card */}
-              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors h-48">
+              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors min-h-[12rem] h-auto">
                 <div className="flex items-start justify-between">
                   <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center shadow-sm border border-border">
                     <svg className="w-7 h-7" viewBox="0 0 24 24">
@@ -816,7 +1032,7 @@ export default function SettingsPage() {
                   )}
                 </div>
                 
-                <div className="flex items-end justify-between mt-4">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-4">
                   <div>
                     <h3 className="font-bold">Google</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">Sign in with Google</p>
@@ -837,7 +1053,7 @@ export default function SettingsPage() {
               </div>
 
               {/* GitHub Card */}
-              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors h-48">
+              <div className="flex flex-col justify-between p-6 rounded-2xl border-2 border-border bg-muted/30 hover:border-border/80 transition-colors min-h-[12rem] h-auto">
                 <div className="flex items-start justify-between">
                   <div className="w-14 h-14 bg-[#24292e] text-white rounded-2xl flex items-center justify-center shadow-sm">
                     <svg className="w-8 h-8" fill="currentColor" viewBox="0 0 24 24">
@@ -854,7 +1070,7 @@ export default function SettingsPage() {
                   )}
                 </div>
                 
-                <div className="flex items-end justify-between mt-4">
+                <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mt-4">
                   <div>
                     <h3 className="font-bold">GitHub</h3>
                     <p className="text-sm text-muted-foreground mt-0.5">Sign in with GitHub</p>
@@ -876,6 +1092,62 @@ export default function SettingsPage() {
 
             </div>
           </MagicBentoCard>
+          </MagicBento>
+        </TabsContent>
+
+        {/* NOTIFICATIONS TAB */}
+        <TabsContent value="notifications" className="space-y-6 mt-6">
+          <MagicBento enableSpotlight={true} spotlightRadius={300} glowColor="245, 158, 11" className="w-full gap-6">
+            <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="245, 158, 11">
+              <div className="p-6 md:p-8 border-b border-border">
+                <div className="flex items-center gap-3">
+                  <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-xl text-amber-600 dark:text-amber-400">
+                    <Mail className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold">Email Notifications</h3>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Configure when you want to receive security alerts and updates in your inbox.
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="p-6 md:p-8 space-y-6 z-10 relative">
+                <div className="flex items-center justify-between p-4 rounded-xl border border-border bg-muted/20">
+                  <div className="space-y-1">
+                    <h4 className="font-bold">Email Security Alerts</h4>
+                    <p className="text-sm text-muted-foreground">
+                      Receive notifications when critical updates are made to your account (e.g. password changes).
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => !isTogglingNotifications && handleToggleNotifications(!profile?.emailNotifications)}
+                    disabled={isTogglingNotifications}
+                    className={`${
+                      profile?.emailNotifications
+                        ? 'bg-amber-500'
+                        : 'bg-gray-300 dark:bg-gray-600'
+                    } relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70`}
+                  >
+                    {isTogglingNotifications ? (
+                      <span className="pointer-events-none inline-flex items-center justify-center h-5 w-5 rounded-full bg-white dark:bg-gray-100 shadow-md">
+                        <svg className="animate-spin h-3 w-3 text-amber-500" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      </span>
+                    ) : (
+                      <span
+                        className={`${
+                          profile?.emailNotifications ? 'translate-x-5' : 'translate-x-0'
+                        } pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white dark:bg-gray-100 shadow-md ring-0 transition duration-200 ease-in-out`}
+                      />
+                    )}
+                  </button>
+                </div>
+              </div>
+            </MagicBentoCard>
           </MagicBento>
         </TabsContent>
       </Tabs>

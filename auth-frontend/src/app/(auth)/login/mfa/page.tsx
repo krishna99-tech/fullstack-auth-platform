@@ -38,7 +38,7 @@ function MfaForm() {
       }
 
       localStorage.setItem('token', data.token);
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -89,7 +89,12 @@ function MfaForm() {
 
 export default function MfaPage() {
   return (
-    <Suspense fallback={<div>Loading...</div>}>
+    <Suspense fallback={
+      <div className="min-h-[50vh] flex flex-col items-center justify-center">
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
+        <p className="text-muted-foreground font-medium animate-pulse">Loading MFA details...</p>
+      </div>
+    }>
       <MfaForm />
     </Suspense>
   );

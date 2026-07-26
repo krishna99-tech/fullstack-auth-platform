@@ -22,6 +22,8 @@ exports.getProfile = async (req, res) => {
         googleId: true,
         githubId: true,
         mfaEnabled: true,
+        emailNotifications: true,
+        accentColor: true,
       }
     });
 
@@ -41,6 +43,8 @@ exports.getProfile = async (req, res) => {
       hasGoogle: !!user.googleId,
       hasGithub: !!user.githubId,
       mfaEnabled: user.mfaEnabled,
+      emailNotifications: user.emailNotifications,
+      accentColor: user.accentColor,
     };
 
     res.json(profile);
@@ -178,6 +182,15 @@ exports.changePassword = async (req, res) => {
       data: { passwordHash }
     });
 
+    if (user.emailNotifications) {
+      const { sendSecurityAlertEmail } = require('../utils/email');
+      try {
+        await sendSecurityAlertEmail(user.email, 'Your account password was recently changed.');
+      } catch (emailError) {
+        console.error('Failed to send security alert email for password change:', emailError);
+      }
+    }
+
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
@@ -300,6 +313,115 @@ exports.disableMFA = async (req, res) => {
     res.json({ message: 'MFA disabled successfully' });
   } catch (error) {
     console.error('Disable MFA error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.updatePreferences = async (req, res) => {
+  try {
+    const { emailNotifications, accentColor } = req.body;
+
+    const updates = {};
+    if (emailNotifications !== undefined) updates.emailNotifications = emailNotifications;
+    if (accentColor !== undefined) updates.accentColor = accentColor;
+
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'No preferences provided to update' });
+    }
+
+    const user = await prisma.user.update({
+      where: { id: req.user.userId },
+      data: updates
+    });
+
+    if (emailNotifications === true) {
+      const { sendSecurityAlertEmail } = require('../utils/email');
+      try {
+        await sendSecurityAlertEmail(user.email, {
+          loginTime: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+          location: 'Your Request',
+          ipAddress: 'N/A',
+          alertMessage: 'You have successfully opted-in to receive account security email notifications.'
+        });
+      } catch (emailError) {
+        console.error('Failed to send opt-in confirmation email:', emailError);
+      }
+    }
+
+    res.json({ 
+      message: 'Preferences updated successfully', 
+      emailNotifications: user.emailNotifications,
+      accentColor: user.accentColor
+    });
+  } catch (error) {
+    console.error('Update preferences error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.revokeOtherSessions = async (req, res) => {
+  try {
+    const currentSessionId = req.sessionId;
+
+    await prisma.session.deleteMany({
+      where: {
+        userId: req.user.userId,
+        id: { not: currentSessionId }
+      }
+    });
+
+    res.json({ message: 'All other sessions revoked successfully' });
+  } catch (error) {
+    console.error('Revoke other sessions error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.deleteAccount = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+
+    await prisma.user.delete({
+      where: { id: userId }
+    });
+
+    res.json({ message: 'Account deleted successfully' });
+  } catch (error) {
+    console.error('Delete account error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.resendVerification = async (req, res) => {
+  try {
+    const userId = req.user.userId;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: 'Account is already verified' });
+    }
+
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        verificationToken,
+        verificationCodeExpiry
+      }
+    });
+
+    const { sendVerificationEmail } = require('../utils/email');
+    await sendVerificationEmail(user.email, verificationToken);
+
+    res.json({ message: 'Verification email resent successfully' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

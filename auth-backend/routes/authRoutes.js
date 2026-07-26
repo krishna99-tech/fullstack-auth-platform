@@ -16,10 +16,14 @@ const settingsController = require('../controllers/settingsController');
 // Settings Routes
 router.get('/me', authMiddleware, settingsController.getProfile);
 router.put('/profile', authMiddleware, settingsController.updateProfile);
+router.patch('/preferences', authMiddleware, settingsController.updatePreferences);
 router.post('/change-password', authMiddleware, settingsController.changePassword);
 router.get('/sessions', authMiddleware, settingsController.getSessions);
+router.delete('/sessions', authMiddleware, settingsController.revokeOtherSessions);
 router.delete('/sessions/:id', authMiddleware, settingsController.revokeSession);
 router.delete('/providers/:provider', authMiddleware, settingsController.disconnectProvider);
+router.delete('/me', authMiddleware, settingsController.deleteAccount);
+router.post('/resend-verification', authMiddleware, settingsController.resendVerification);
 
 // MFA Routes
 router.post('/mfa/setup', authMiddleware, settingsController.setupMFA);

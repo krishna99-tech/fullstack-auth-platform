@@ -2,9 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { SocialButton } from "@/components/base/buttons/social-button";
 
 export default function Login() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -52,7 +54,7 @@ export default function Login() {
       localStorage.setItem('token', data.token);
       
       // Redirect to dashboard
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
 
     } catch (err: any) {
       setError(err.message);
@@ -79,7 +81,7 @@ export default function Login() {
       }
 
       localStorage.setItem('token', data.token);
-      window.location.href = '/dashboard';
+      router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);
     } finally {

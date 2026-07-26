@@ -105,11 +105,11 @@ export default function Dashboard() {
             Here's what's happening with your account today.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button variant="outline" className="rounded-xl shadow-sm">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
+          <Button variant="outline" className="rounded-xl shadow-sm w-full sm:w-auto">
             Export Report
           </Button>
-          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "default" }), "rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white")}>
+          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "default" }), "rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto text-center justify-center")}>
             Manage Security
           </Link>
         </div>
@@ -182,12 +182,12 @@ export default function Dashboard() {
             {/* Main Content Area (Recent Activity Table) */}
             <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="59, 130, 246">
               <div className="h-full z-10 relative flex flex-col">
-                <div className="p-6 md:p-8 border-b border-border flex items-center justify-between">
+                <div className="p-6 md:p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <h2 className="text-xl font-bold text-foreground">Active Sessions</h2>
                     <p className="text-sm text-muted-foreground mt-1">Review where your account is currently logged in.</p>
                   </div>
-                  <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0")}>
+                  <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0 w-full sm:w-auto text-center justify-center")}>
                     Manage
                   </Link>
                 </div>

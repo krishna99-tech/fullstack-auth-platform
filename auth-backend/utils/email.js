@@ -1,6 +1,40 @@
 const nodemailer = require('nodemailer');
 const hbs = require('nodemailer-express-handlebars').default || require('nodemailer-express-handlebars');
 const path = require('path');
+const https = require('https');
+
+/**
+ * Resolves an IP address to a human-readable location string using ip-api.com (free, no key).
+ * Returns "City, Region, Country" or falls back to the raw IP if lookup fails.
+ */
+exports.getLocationFromIP = (ip) => {
+  return new Promise((resolve) => {
+    // Loopback / private addresses can't be geolocated
+    if (!ip || ip === '127.0.0.1' || ip === '::1' || ip.startsWith('192.168.') || ip.startsWith('10.')) {
+      return resolve('Local / Private Network');
+    }
+
+    const url = `https://ip-api.com/json/${ip}?fields=status,city,regionName,country,isp`;
+    https.get(url, (res) => {
+      let data = '';
+      res.on('data', (chunk) => { data += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(data);
+          if (json.status === 'success') {
+            const parts = [json.city, json.regionName, json.country].filter(Boolean);
+            resolve(parts.join(', '));
+          } else {
+            resolve(ip);
+          }
+        } catch {
+          resolve(ip);
+        }
+      });
+    }).on('error', () => resolve(ip));
+  });
+};
+
 
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
@@ -63,3 +97,33 @@ exports.sendPasswordResetEmail = async (email, token) => {
     }
   });
 };
+
+exports.sendSecurityAlertEmail = async (email, { loginTime, location, ipAddress, via2FA = false, alertMessage } = {}) => {
+  const messageId = `<${Date.now()}.${Math.random().toString(36).slice(2)}@securealert>`;
+
+  await transporter.sendMail({
+    from: process.env.SMTP_FROM || '"SecureAuth Alerts" <security@myplatform.com>',
+    to: email,
+    subject: `New sign-in to your account on ${loginTime}`,
+    template: 'security-alert',
+    context: {
+      loginTime: loginTime || 'Unknown',
+      location: location || 'Unknown',
+      ipAddress: ipAddress || 'Unknown',
+      via2FA,
+      // legacy fallback for non-login alerts (password change, opt-in, etc.)
+      alertMessage: alertMessage || null,
+      actionLink: `${process.env.FRONTEND_URL}/dashboard/settings`,
+    },
+    headers: {
+      'Message-ID': messageId,
+      'X-Mailer': 'SecureAuth Notifications',
+      'X-Priority': '1',
+      'X-MSMail-Priority': 'High',
+      'Importance': 'High',
+      'Precedence': 'transactional',
+      'Auto-Submitted': 'auto-generated',
+    }
+  });
+};
+

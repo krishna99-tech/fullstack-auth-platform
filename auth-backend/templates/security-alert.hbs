@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Security Alert</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #0f172a; padding: 32px 16px; color: #e2e8f0; }
+    .wrapper { max-width: 560px; margin: 0 auto; }
+    .card { background: #1e293b; border-radius: 12px; border: 1px solid #334155; overflow: hidden; }
+    .header { background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%); padding: 32px 36px; }
+    .header-icon { width: 48px; height: 48px; background: rgba(239,68,68,0.2); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px; font-size: 24px; }
+    .header h1 { font-size: 22px; font-weight: 700; color: #ffffff; letter-spacing: -0.3px; }
+    .header p { font-size: 14px; color: #a5b4fc; margin-top: 4px; }
+    .body { padding: 28px 36px; }
+    .greeting { font-size: 15px; color: #cbd5e1; margin-bottom: 20px; line-height: 1.6; }
+    .info-card { background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 20px 24px; margin: 20px 0; }
+    .info-row { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-bottom: 1px solid #1e293b; }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-row:first-child { padding-top: 0; }
+    .info-icon { font-size: 20px; line-height: 1; flex-shrink: 0; margin-top: 1px; }
+    .info-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.8px; color: #64748b; font-weight: 600; }
+    .info-value { font-size: 14px; color: #e2e8f0; font-weight: 500; margin-top: 2px; }
+    .alert-note { background: rgba(239,68,68,0.08); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; padding: 14px 18px; margin: 20px 0; }
+    .alert-note p { font-size: 13px; color: #fca5a5; line-height: 1.6; }
+    .cta-btn { display: block; width: 100%; text-align: center; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff !important; text-decoration: none; padding: 14px 24px; border-radius: 8px; font-size: 15px; font-weight: 600; margin-top: 24px; }
+    .footer { padding: 20px 36px; border-top: 1px solid #1e293b; text-align: center; }
+    .footer p { font-size: 12px; color: #475569; line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="card">
+      <div class="header">
+        <div class="header-icon">🔐</div>
+        <h1>New Login Detected</h1>
+        <p>Security alert for your account</p>
+      </div>
+      <div class="body">
+        <p class="greeting">
+          Hi there,<br/><br/>
+          We detected a new sign-in to your account. Here are the details:
+        </p>
+
+        <div class="info-card">
+          <div class="info-row">
+            <span class="info-icon">🕐</span>
+            <div>
+              <div class="info-label">Time</div>
+              <div class="info-value">{{loginTime}}</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon">📍</span>
+            <div>
+              <div class="info-label">Location</div>
+              <div class="info-value">{{location}}</div>
+            </div>
+          </div>
+          <div class="info-row">
+            <span class="info-icon">🌐</span>
+            <div>
+              <div class="info-label">IP Address</div>
+              <div class="info-value">{{ipAddress}}</div>
+            </div>
+          </div>
+          {{#if via2FA}}
+          <div class="info-row">
+            <span class="info-icon">🔑</span>
+            <div>
+              <div class="info-label">Method</div>
+              <div class="info-value">Two-Factor Authentication (2FA)</div>
+            </div>
+          </div>
+          {{/if}}
+        </div>
+
+        {{#if alertMessage}}
+        <div class="alert-note">
+          <p>ℹ️ {{alertMessage}}</p>
+        </div>
+        {{else}}
+        <div class="alert-note">
+          <p>⚠️ If this wasn't you, please visit your Security Settings immediately and revoke this session. We also recommend changing your password.</p>
+        </div>
+        {{/if}}
+
+        <a href="{{actionLink}}" class="cta-btn">Review Active Sessions →</a>
+      </div>
+      <div class="footer">
+        <p>This is an automated security notification. Do not reply to this email.<br/>
+        You're receiving this because security alerts are enabled on your account.</p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

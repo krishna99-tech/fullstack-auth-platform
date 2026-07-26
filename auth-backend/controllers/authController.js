@@ -4,7 +4,7 @@ const crypto = require('crypto');
 const { PrismaClient } = require('@prisma/client');
 const { Pool } = require('pg');
 const { PrismaPg } = require('@prisma/adapter-pg');
-const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/email');
+const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendSecurityAlertEmail, getLocationFromIP } = require('../utils/email');
 
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
@@ -159,6 +159,17 @@ exports.login = async (req, res) => {
       }
     });
 
+    // Send login alert email if user has notifications enabled
+    if (user.emailNotifications) {
+      const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+      try {
+        const location = await getLocationFromIP(ipAddress);
+        await sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: false });
+      } catch (emailError) {
+        console.error('Login alert email error:', emailError);
+      }
+    }
+
     res.json({ token, user: { id: user.id, email: user.email } });
   } catch (error) {
     console.error('Login error:', error);
@@ -253,6 +264,17 @@ exports.verifyMfaLogin = async (req, res) => {
         ipAddress
       }
     });
+
+    // Send login alert email if user has notifications enabled
+    if (user.emailNotifications) {
+      const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+      try {
+        const location = await getLocationFromIP(ipAddress);
+        await sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: true });
+      } catch (emailError) {
+        console.error('MFA login alert email error:', emailError);
+      }
+    }
 
     res.json({ message: 'Login successful', token, user: { id: user.id, email: user.email } });
   } catch (error) {

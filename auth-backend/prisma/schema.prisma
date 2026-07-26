@@ -7,22 +7,24 @@ datasource db {
 }
 
 model User {
-  id                 String    @id @default(uuid())
-  email              String    @unique
-  passwordHash       String?
-  name               String?
-  phoneNumber        String?
-  googleId           String?   @unique
-  githubId           String?   @unique
-  isVerified         Boolean   @default(false)
-  mfaEnabled         Boolean   @default(false)
-  mfaSecret          String?
-  verificationToken  String?
+  id                     String    @id @default(uuid())
+  email                  String    @unique
+  passwordHash           String?
+  name                   String?
+  phoneNumber            String?
+  googleId               String?   @unique
+  githubId               String?   @unique
+  isVerified             Boolean   @default(false)
+  mfaEnabled             Boolean   @default(false)
+  emailNotifications     Boolean   @default(false)
+  accentColor            String    @default("59, 130, 246")
+  mfaSecret              String?
+  verificationToken      String?
   verificationCodeExpiry DateTime?
-  resetPasswordToken String?
-  resetPasswordExpiry DateTime?
-  createdAt          DateTime  @default(now())
-  sessions           Session[]
+  resetPasswordToken     String?
+  resetPasswordExpiry    DateTime?
+  createdAt              DateTime  @default(now())
+  sessions               Session[]
 }
 
 model Session {
