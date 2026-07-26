@@ -1,11 +1,5 @@
 const bcrypt = require('bcrypt');
-const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
+const prisma = require('../prismaClient');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -183,9 +177,17 @@ exports.changePassword = async (req, res) => {
     });
 
     if (user.emailNotifications) {
-      const { sendSecurityAlertEmail } = require('../utils/email');
+      const { sendSecurityAlertEmail, getLocationFromIP } = require('../utils/email');
       try {
-        await sendSecurityAlertEmail(user.email, 'Your account password was recently changed.');
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
+        const location = await getLocationFromIP(ipAddress);
+
+        await sendSecurityAlertEmail(user.email, {
+          loginTime: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
+          location: location,
+          ipAddress: ipAddress,
+          alertMessage: 'Your account password was recently changed.'
+        });
       } catch (emailError) {
         console.error('Failed to send security alert email for password change:', emailError);
       }
@@ -335,12 +337,15 @@ exports.updatePreferences = async (req, res) => {
     });
 
     if (emailNotifications === true) {
-      const { sendSecurityAlertEmail } = require('../utils/email');
+      const { sendSecurityAlertEmail, getLocationFromIP } = require('../utils/email');
       try {
+        const ipAddress = req.headers['x-forwarded-for'] || req.socket.remoteAddress || 'Unknown';
+        const location = await getLocationFromIP(ipAddress);
+
         await sendSecurityAlertEmail(user.email, {
           loginTime: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }),
-          location: 'Your Request',
-          ipAddress: 'N/A',
+          location: location,
+          ipAddress: ipAddress,
           alertMessage: 'You have successfully opted-in to receive account security email notifications.'
         });
       } catch (emailError) {

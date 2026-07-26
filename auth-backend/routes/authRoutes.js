@@ -62,22 +62,13 @@ router.get('/google/callback',
       { expiresIn: '1d' }
     );
     
-    // We MUST initialize Prisma with the pg adapter because the generated client requires it
-    const { Pool } = require('pg');
-    const { PrismaPg } = require('@prisma/adapter-pg');
-    const { PrismaClient } = require('@prisma/client');
+    const prisma = require('../prismaClient');
     
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';
     
-    let tempPool;
-    let tempPrisma;
     try {
-      tempPool = new Pool({ connectionString: process.env.DATABASE_URL });
-      const adapter = new PrismaPg(tempPool);
-      tempPrisma = new PrismaClient({ adapter });
-      
-      await tempPrisma.session.create({
+      await prisma.session.create({
         data: {
           userId: req.user.id,
           token: token,
@@ -87,9 +78,6 @@ router.get('/google/callback',
       });
     } catch (err) {
       console.error('Failed to create session on OAuth:', err);
-    } finally {
-      if (tempPrisma) await tempPrisma.$disconnect();
-      if (tempPool) await tempPool.end();
     }
 
     // Redirect to frontend with token
@@ -125,28 +113,17 @@ router.get('/github/callback',
       { expiresIn: '1d' }
     );
     
-    const { Pool } = require('pg');
-    const { PrismaPg } = require('@prisma/adapter-pg');
-    const { PrismaClient } = require('@prisma/client');
+    const prisma = require('../prismaClient');
 
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';
     
-    let tempPool;
-    let tempPrisma;
     try {
-      tempPool = new Pool({ connectionString: process.env.DATABASE_URL });
-      const adapter = new PrismaPg(tempPool);
-      tempPrisma = new PrismaClient({ adapter });
-      
-      await tempPrisma.session.create({
+      await prisma.session.create({
         data: { userId: req.user.id, token, device: userAgent, ipAddress }
       });
     } catch (err) {
       console.error('Failed to create session on GitHub OAuth:', err);
-    } finally {
-      if (tempPrisma) await tempPrisma.$disconnect();
-      if (tempPool) await tempPool.end();
     }
 
     res.redirect(`${process.env.FRONTEND_URL}/dashboard?token=${token}`);
