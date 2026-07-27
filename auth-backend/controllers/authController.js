@@ -37,7 +37,7 @@ exports.signup = async (req, res) => {
 
     // Send verification email
     try {
-      await sendVerificationEmail(user.email, verificationToken);
+      await sendVerificationEmail(user.email, verificationToken, user.name);
     } catch (emailError) {
       console.error('Error sending email:', emailError);
       // In production, we might still return success but note the email failed,
@@ -90,7 +90,7 @@ exports.verifyEmail = async (req, res) => {
 
     // Send Welcome Email
     try {
-      await sendWelcomeEmail(user.email);
+      await sendWelcomeEmail(user.email, user.name);
     } catch (emailError) {
       console.error('Error sending welcome email:', emailError);
     }
@@ -193,7 +193,7 @@ exports.forgotPassword = async (req, res) => {
     });
 
     try {
-      await sendPasswordResetEmail(user.email, resetToken);
+      await sendPasswordResetEmail(user.email, resetToken, user.name);
     } catch (emailError) {
       console.error('Error sending password reset email:', emailError);
     }

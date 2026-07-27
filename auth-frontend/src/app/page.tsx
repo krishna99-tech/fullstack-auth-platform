@@ -5,6 +5,9 @@ import Link from 'next/link';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { RatingBadge } from "@/components/foundations/rating-badge";
 import TrueFocus from '@/components/foundations/TrueFocus';
+import { FooterLarge01 } from '@/components/landing/footer';
+import { NewsletterIPhoneMockup01 } from '@/components/landing/newsletter-mockup';
+import { FeaturesAlternatingLayout01 } from '@/components/landing/features';
 
 export default function Home() {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -82,39 +85,10 @@ export default function Home() {
         <RatingBadge rating={5} title="Best Design Tool" subtitle="2,000+ reviews" className="animate-fade-in-up delay-200" />
       </main>
 
-      {/* Feature Grid */}
-      <section className="relative z-10 max-w-7xl mx-auto w-full px-6 py-24">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="glass-card p-8 hover:-translate-y-1 transition-transform duration-300 cursor-default">
-            <div className="w-12 h-12 bg-blue-500/20 text-blue-400 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09A13.916 13.916 0 008 11a4 4 0 118 0c0 1.017-.07 2.019-.203 3m-2.118 6.844A21.88 21.88 0 0015.171 17m3.839 1.132c.645-2.266.99-4.659.99-7.132A8 8 0 008 4.07M3 15.364c.64-1.319 1-2.8 1-4.364 0-1.457.39-2.823 1.07-4" /></svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3">Secure by Default</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Industrial-grade encryption using bcrypt and JWTs to keep your users' data locked down.</p>
-          </div>
-
-          <div className="glass-card p-8 hover:-translate-y-1 transition-transform duration-300 cursor-default">
-            <div className="w-12 h-12 bg-purple-500/20 text-purple-400 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3">Custom Emails</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Send fully branded, beautiful Handlebars HTML emails for verifications and password resets.</p>
-          </div>
-
-          <div className="glass-card p-8 hover:-translate-y-1 transition-transform duration-300 cursor-default">
-            <div className="w-12 h-12 bg-indigo-500/20 text-indigo-400 rounded-xl flex items-center justify-center mb-6">
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" /></svg>
-            </div>
-            <h3 className="text-xl font-bold mb-3">Seamless OAuth</h3>
-            <p className="text-gray-600 dark:text-gray-400 leading-relaxed">Integrate Google Sign-In with Passport.js for a frictionless 1-click onboarding experience.</p>
-          </div>
-        </div>
-      </section>
+      <FeaturesAlternatingLayout01 />
+      <NewsletterIPhoneMockup01 />
       
-      {/* Subtle footer */}
-      <footer className="relative z-10 border-t border-zinc-200 dark:border-[#262626] py-8 text-center text-gray-500 text-sm">
-        &copy; {new Date().getFullYear()} Premium Platform. All rights reserved.
-      </footer>
+      <FooterLarge01 />
     </div>
   );
 }

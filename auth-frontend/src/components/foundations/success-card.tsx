@@ -20,8 +20,6 @@ export function SuccessCard({
   return (
     <Card className="max-w-md mx-auto p-8 flex flex-col items-center text-center space-y-6 bg-background/50 backdrop-blur-md border-border/50 shadow-xl">
       <div className="relative">
-        {/* Glow effect behind the illustration */}
-        <div className="absolute inset-0 bg-emerald-500/20 blur-3xl rounded-full scale-150" />
         <Illustration 
           type="shield-check" 
           size="xl" 

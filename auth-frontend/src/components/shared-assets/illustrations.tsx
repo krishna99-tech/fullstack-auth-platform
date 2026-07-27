@@ -77,7 +77,7 @@ export function Illustration({
   return (
     <div 
       className={cn(
-        'relative inline-flex items-center justify-center rounded-2xl border shadow-lg transition-transform hover:-translate-y-1 duration-300',
+        'relative inline-flex items-center justify-center rounded-2xl border shadow-lg',
         sizeStyles[size],
         variantStyles[variant],
         className

@@ -10,8 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { Illustration } from "@/components/shared-assets/illustrations";
-import { MagicBento, MagicBentoCard } from "@/components/foundations/MagicBento";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -82,18 +80,14 @@ export default function Dashboard() {
   if (loading) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin mb-4" />
-        <p className="text-muted-foreground font-medium animate-pulse">Loading your workspace...</p>
+        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full mb-4" />
+        <p className="text-muted-foreground font-medium">Loading your workspace...</p>
       </div>
     );
   }
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto w-full relative animate-fade-in-up">
-      
-      {/* Subtle Background Glow */}
-      <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-blue-500/5 dark:bg-blue-500/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
-      <div className="absolute bottom-0 left-0 w-[500px] h-[500px] bg-purple-500/5 dark:bg-purple-500/10 rounded-full blur-[120px] -z-10 pointer-events-none" />
+    <div className="p-8 md:p-12 max-w-7xl mx-auto w-full relative">
       
       {/* Top Header */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
@@ -115,135 +109,130 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Magic Bento Section replacing the old layout */}
-      <div>
-        <div className="w-full flex justify-center">
-          <MagicBento 
-            enableSpotlight={true}
-            spotlightRadius={300}
-            glowColor="59, 130, 246"
-            className="w-full gap-6"
-          >
-            {/* Active Sessions Stat */}
-            <MagicBentoCard className="col-span-1 p-6" enableStars={true} particleCount={8} glowColor="59, 130, 246">
-              <div className="flex flex-col h-full justify-between z-10 relative">
-                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <span className="text-sm font-medium text-muted-foreground">Active Sessions</span>
-                  <Illustration type="monitor" size="sm" variant="primary" />
-                </div>
-                <div>
-                  <div className="text-4xl font-extrabold mb-2 text-foreground">{sessions.length || 1}</div>
-                  <div className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
-                    <ArrowUpRight className="w-4 h-4" /> 
-                    <span>Securely connected</span>
-                  </div>
-                </div>
+      {/* Clean Grid Section replacing the old layout */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Active Sessions Stat */}
+        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex flex-row items-center justify-between pb-2">
+              <span className="text-sm font-medium text-muted-foreground">Active Sessions</span>
+              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                <MonitorSmartphone className="w-4 h-4" />
               </div>
-            </MagicBentoCard>
+            </div>
+            <div>
+              <div className="text-4xl font-extrabold mb-2 text-foreground">{sessions.length || 1}</div>
+              <div className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
+                <ArrowUpRight className="w-4 h-4" /> 
+                <span>Securely connected</span>
+              </div>
+            </div>
+          </div>
+        </Card>
 
-            {/* Account Security Stat */}
-            <MagicBentoCard className="col-span-1 p-6" enableBorderGlow={true} glowColor="16, 185, 129">
-              <div className="flex flex-col h-full justify-between z-10 relative">
-                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <span className="text-sm font-medium text-muted-foreground">Security Status</span>
-                  <Illustration type="shield-check" size="sm" variant="success" />
-                </div>
-                <div>
-                  <div className="text-2xl font-bold mb-3 mt-2 text-foreground">
-                    {profile?.isVerified ? 'Protected' : 'Action Required'}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                    <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                      <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
-                    </div>
-                    <span>{profile?.isVerified ? 'Good' : 'Weak'}</span>
-                  </div>
-                </div>
+        {/* Account Security Stat */}
+        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex flex-row items-center justify-between pb-2">
+              <span className="text-sm font-medium text-muted-foreground">Security Status</span>
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profile?.isVerified ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400'}`}>
+                <ShieldCheck className="w-4 h-4" />
               </div>
-            </MagicBentoCard>
+            </div>
+            <div>
+              <div className="text-2xl font-bold mb-3 mt-2 text-foreground">
+                {profile?.isVerified ? 'Protected' : 'Action Required'}
+              </div>
+              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
+                  <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
+                </div>
+                <span>{profile?.isVerified ? 'Good' : 'Weak'}</span>
+              </div>
+            </div>
+          </div>
+        </Card>
 
-            {/* Recent Activity Stat */}
-            <MagicBentoCard className="col-span-1 p-6 lg:col-span-2" enableMagnetism={true} enableTilt={true} glowColor="245, 158, 11">
-              <div className="flex flex-col h-full justify-between z-10 relative pointer-events-none">
-                <div className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <span className="text-sm font-medium text-muted-foreground">Authentication Events</span>
-                  <Illustration type="key" size="sm" variant="warning" />
-                </div>
-                <div>
-                  <div className="text-4xl font-extrabold mb-2 text-foreground">12</div>
-                  <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                    <Clock className="w-4 h-4" /> 
-                    <span>Logins in last 30 days</span>
-                  </div>
-                </div>
+        {/* Recent Activity Stat */}
+        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
+          <div className="flex flex-col h-full justify-between">
+            <div className="flex flex-row items-center justify-between pb-2">
+              <span className="text-sm font-medium text-muted-foreground">Authentication Events</span>
+              <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
+                <KeySquare className="w-4 h-4" />
               </div>
-            </MagicBentoCard>
-
-            {/* Main Content Area (Recent Activity Table) */}
-            <MagicBentoCard className="col-span-1 md:col-span-2 lg:col-span-4 p-0 overflow-visible" enableBorderGlow={true} glowColor="59, 130, 246">
-              <div className="h-full z-10 relative flex flex-col">
-                <div className="p-6 md:p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div>
-                    <h2 className="text-xl font-bold text-foreground">Active Sessions</h2>
-                    <p className="text-sm text-muted-foreground mt-1">Review where your account is currently logged in.</p>
-                  </div>
-                  <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0 w-full sm:w-auto text-center justify-center")}>
-                    Manage
-                  </Link>
-                </div>
-                <div className="overflow-x-auto w-full">
-                  <Table>
-                    <TableHeader className="bg-muted/30">
-                      <TableRow className="border-border hover:bg-transparent">
-                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Device & Browser</TableHead>
-                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">IP Address</TableHead>
-                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Last Active</TableHead>
-                        <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-right text-muted-foreground">Status</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {sessions.map((session) => (
-                        <TableRow key={session.id} className="hover:bg-muted/50 transition-colors group border-border">
-                          <TableCell className="px-6 md:px-8 py-5">
-                            <div className="flex items-center gap-3">
-                              <div className="p-2 bg-muted/50 rounded-lg text-muted-foreground group-hover:text-blue-500 group-hover:bg-blue-500/10 transition-colors">
-                                <MonitorSmartphone className="w-5 h-5" />
-                              </div>
-                              <div className="flex flex-col text-foreground">
-                                <span className="font-bold">{parseUA(session.device)}</span>
-                                {session.isCurrent && (
-                                  <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current Session</span>
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell className="px-6 md:px-8 py-5 font-medium text-foreground">{session.ipAddress || 'Unknown IP'}</TableCell>
-                          <TableCell className="px-6 md:px-8 py-5 text-muted-foreground font-medium">
-                            {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                          </TableCell>
-                          <TableCell className="px-6 md:px-8 py-5 text-right">
-                            <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5 py-1 px-3">
-                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Active
-                            </Badge>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                      {sessions.length === 0 && (
-                        <TableRow className="border-border hover:bg-transparent">
-                          <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground font-medium">
-                            No session data available.
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </TableBody>
-                  </Table>
-                </div>
+            </div>
+            <div>
+              <div className="text-4xl font-extrabold mb-2 text-foreground">12</div>
+              <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
+                <Clock className="w-4 h-4" /> 
+                <span>Logins in last 30 days</span>
               </div>
-            </MagicBentoCard>
-          </MagicBento>
-        </div>
+            </div>
+          </div>
+        </Card>
       </div>
+
+      {/* Main Content Area (Recent Activity Table) */}
+      <Card className="shadow-sm rounded-2xl border-border/50 overflow-hidden">
+        <div className="p-6 md:p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-xl font-bold text-foreground">Active Sessions</h2>
+            <p className="text-sm text-muted-foreground mt-1">Review where your account is currently logged in.</p>
+          </div>
+          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0 w-full sm:w-auto text-center justify-center")}>
+            Manage
+          </Link>
+        </div>
+        <div className="overflow-x-auto w-full">
+          <Table>
+            <TableHeader className="bg-muted/30">
+              <TableRow className="border-border hover:bg-transparent">
+                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Device & Browser</TableHead>
+                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">IP Address</TableHead>
+                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Last Active</TableHead>
+                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-right text-muted-foreground">Status</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sessions.map((session) => (
+                <TableRow key={session.id} className="border-border">
+                  <TableCell className="px-6 md:px-8 py-5">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 bg-muted/50 rounded-lg text-muted-foreground">
+                        <MonitorSmartphone className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col text-foreground">
+                        <span className="font-bold">{parseUA(session.device)}</span>
+                        {session.isCurrent && (
+                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current Session</span>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell className="px-6 md:px-8 py-5 font-medium text-foreground">{session.ipAddress || 'Unknown IP'}</TableCell>
+                  <TableCell className="px-6 md:px-8 py-5 text-muted-foreground font-medium">
+                    {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                  </TableCell>
+                  <TableCell className="px-6 md:px-8 py-5 text-right">
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5 py-1 px-3">
+                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Active
+                    </Badge>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {sessions.length === 0 && (
+                <TableRow className="border-border hover:bg-transparent">
+                  <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground font-medium">
+                    No session data available.
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
       
     </div>
   );
