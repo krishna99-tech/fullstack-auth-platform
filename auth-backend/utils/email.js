@@ -36,15 +36,15 @@ exports.getLocationFromIP = (ip) => {
       return resolve('Local / Private Network');
     }
 
-    const url = `http://ip-api.com/json/${cleanIp}?fields=status,city,regionName,country`;
-    http.get(url, (res) => {
+    const url = `https://freeipapi.com/api/json/${cleanIp}`;
+    https.get(url, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.status === 'success') {
-            const parts = [json.city, json.regionName, json.country].filter(Boolean);
+          if (json.cityName || json.countryName) {
+            const parts = [json.cityName, json.regionName, json.countryName].filter(Boolean);
             resolve(parts.length > 0 ? parts.join(', ') : 'Unknown Location');
           } else {
             resolve('Unknown Location');

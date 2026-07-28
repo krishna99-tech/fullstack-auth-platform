@@ -22,6 +22,7 @@ router.get('/check-username', async (req, res) => {
 
 router.post('/signup', authController.signup);
 router.post('/verify', authController.verifyEmail);
+router.post('/resend-verification-public', authController.resendVerificationPublic);
 router.post('/login', authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);

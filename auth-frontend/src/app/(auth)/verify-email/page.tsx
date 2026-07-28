@@ -17,6 +17,8 @@ function VerifyEmailContent() {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [autoVerifying, setAutoVerifying] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState('');
 
   // AUTO-VERIFY: If both email and token come from the email link, verify immediately.
   useEffect(() => {
@@ -63,6 +65,35 @@ function VerifyEmailContent() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (!email) {
+      setError('Email is required to resend verification.');
+      return;
+    }
+    setIsResending(true);
+    setResendMessage('');
+    setError('');
+    
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/resend-verification-public`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      
+      const data = await res.json();
+      if (res.ok) {
+        setResendMessage('A new verification code has been sent to your email.');
+      } else {
+        setError(data.error || 'Failed to resend verification.');
+      }
+    } catch (err) {
+      setError('Failed to resend verification email.');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -159,12 +190,19 @@ function VerifyEmailContent() {
           {loading ? 'Verifying…' : 'Verify Account'}
         </button>
 
-        <p className="text-center text-sm text-muted-foreground">
-          Didn't receive an email?{' '}
-          <Link href="/signup" className="text-purple-400 hover:text-purple-300 font-medium">
-            Try signing up again
-          </Link>
-        </p>
+        <div className="mt-4 text-center">
+          <button
+            type="button"
+            onClick={handleResend}
+            disabled={isResending}
+            className="text-sm font-medium text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            {isResending ? 'Sending...' : 'Didn\'t receive a code? Resend'}
+          </button>
+          {resendMessage && (
+            <p className="mt-2 text-sm text-emerald-500 font-medium">{resendMessage}</p>
+          )}
+        </div>
       </form>
     </>
   );

@@ -66,18 +66,6 @@ Globals:
         SESSIONS_TABLE: !Ref SessionsTable
         AUTH_SESSIONS_TABLE: !Ref AuthSessionsTable
         AUDIT_LOGS_TABLE: !Ref AuditLogsTable
-        FRONTEND_URL: !Ref FrontendUrl
-        BACKEND_URL: !Ref BackendUrl
-        JWT_SECRET: !Ref JwtSecret
-        SMTP_HOST: !Ref SmtpHost
-        SMTP_PORT: !Ref SmtpPort
-        SMTP_USER: !Ref SmtpUser
-        SMTP_PASS: !Ref SmtpPass
-        MAIL_FROM: !Ref MailFrom
-        GOOGLE_CLIENT_ID: !Ref GoogleClientId
-        GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
-        GITHUB_CLIENT_ID: !Ref GithubClientId
-        GITHUB_CLIENT_SECRET: !Ref GithubClientSecret
 
 Resources:
   AuditLogsTable:

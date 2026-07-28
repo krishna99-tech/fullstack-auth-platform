@@ -128,6 +128,47 @@ exports.verifyEmail = async (req, res) => {
   }
 };
 
+exports.resendVerificationPublic = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      // Don't leak if user exists
+      return res.json({ message: 'If your account exists and is unverified, a new code has been sent.' });
+    }
+
+    if (user.isVerified) {
+      return res.status(400).json({ error: 'Account is already verified' });
+    }
+
+    const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        verificationToken,
+        verificationCodeExpiry
+      }
+    });
+
+    try {
+      await sendVerificationEmail(user.email, verificationToken);
+    } catch (emailError) {
+      console.error('Error sending verification email:', emailError);
+    }
+
+    res.json({ message: 'If your account exists and is unverified, a new code has been sent.' });
+  } catch (error) {
+    console.error('Resend verification error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 exports.login = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -179,14 +220,13 @@ exports.login = async (req, res) => {
       }
     });
 
-    await logSecurityEvent(user.id, 'Successful login', ipAddress, 'Unknown Location', 'info');
+    const location = await getLocationFromIP(ipAddress);
+    await logSecurityEvent(user.id, 'Successful login', ipAddress, location, 'info');
 
     // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-      getLocationFromIP(ipAddress)
-        .then(location => sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: false }))
-        .catch(emailError => console.error('Login alert email error:', emailError));
+      sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: false }).catch(err => console.error(err));
     }
 
     res.json({ token, user: { id: user.id, email: user.email } });
@@ -284,14 +324,13 @@ exports.verifyMfaLogin = async (req, res) => {
       }
     });
 
-    await logSecurityEvent(user.id, 'Successful MFA login', ipAddress, 'Unknown Location', 'info');
+    const location = await getLocationFromIP(ipAddress);
+    await logSecurityEvent(user.id, 'Successful MFA login', ipAddress, location, 'info');
 
     // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
-      getLocationFromIP(ipAddress)
-        .then(location => sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: true }))
-        .catch(emailError => console.error('MFA login alert email error:', emailError));
+      sendSecurityAlertEmail(user.email, { loginTime, location, ipAddress, via2FA: true }).catch(err => console.error(err));
     }
 
     res.json({ message: 'Login successful', token, user: { id: user.id, email: user.email } });
