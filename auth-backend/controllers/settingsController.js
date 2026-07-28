@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const prisma = require('../prismaClient');
+const prisma = require('../db');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -88,7 +88,7 @@ exports.updateProfile = async (req, res) => {
       
       // Generate new verification token
       const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-      const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+      const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
       
       updates.verificationToken = verificationToken;
       updates.verificationCodeExpiry = verificationCodeExpiry;
@@ -426,7 +426,7 @@ exports.resendVerification = async (req, res) => {
     }
 
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
 
     await prisma.user.update({
       where: { id: userId },

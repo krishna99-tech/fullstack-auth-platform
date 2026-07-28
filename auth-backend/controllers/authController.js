@@ -1,7 +1,7 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const prisma = require('../prismaClient');
+const prisma = require('../db');
 const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendSecurityAlertEmail, getLocationFromIP } = require('../utils/email');
 
 exports.signup = async (req, res) => {
@@ -46,7 +46,7 @@ exports.signup = async (req, res) => {
     
     // Generate 6-digit code
     const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 mins
+    const verificationCodeExpiry = new Date(Date.now() + 15 * 60 * 1000).toISOString(); // 15 mins
 
     // Create user
     const user = await prisma.user.create({
@@ -98,7 +98,7 @@ exports.verifyEmail = async (req, res) => {
       return res.status(400).json({ error: 'Invalid verification code' });
     }
 
-    if (user.verificationCodeExpiry && user.verificationCodeExpiry < new Date()) {
+    if (user.verificationCodeExpiry && user.verificationCodeExpiry < new Date().toISOString()) {
       return res.status(400).json({ error: 'Verification code has expired' });
     }
 
@@ -205,7 +205,7 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
-    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+    const resetExpiry = new Date(Date.now() + 60 * 60 * 1000).toISOString(); // 1 hour
 
     await prisma.user.update({
       where: { id: user.id },
@@ -302,17 +302,9 @@ exports.resetPassword = async (req, res) => {
       return res.status(400).json({ error: 'Email, token, and new password are required' });
     }
 
-    const user = await prisma.user.findFirst({
-      where: {
-        email,
-        resetPasswordToken: token,
-        resetPasswordExpiry: {
-          gt: new Date()
-        }
-      }
-    });
+    const user = await prisma.user.findUnique({ where: { email } });
 
-    if (!user) {
+    if (!user || user.resetPasswordToken !== token || !user.resetPasswordExpiry || user.resetPasswordExpiry < new Date().toISOString()) {
       return res.status(400).json({ error: 'Invalid or expired token' });
     }
 

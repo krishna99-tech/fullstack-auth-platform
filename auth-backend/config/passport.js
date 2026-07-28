@@ -1,14 +1,8 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const GitHubStrategy = require('passport-github2').Strategy;
-const { PrismaClient } = require('@prisma/client');
-const { Pool } = require('pg');
-const { PrismaPg } = require('@prisma/adapter-pg');
+const db = require('../db');
 const jwt = require('jsonwebtoken');
-
-const pool = new Pool({ connectionString: process.env.DATABASE_URL });
-const adapter = new PrismaPg(pool);
-const prisma = new PrismaClient({ adapter });
 
 passport.serializeUser((user, done) => {
   done(null, user.id);
@@ -16,7 +10,7 @@ passport.serializeUser((user, done) => {
 
 passport.deserializeUser(async (id, done) => {
   try {
-    const user = await prisma.user.findUnique({ where: { id } });
+    const user = await db.user.findUnique({ where: { id } });
     done(null, user);
   } catch (error) {
     done(error, null);
@@ -53,7 +47,7 @@ passport.use(new GoogleStrategy({
 
       if (linkedUserId) {
         // We are linking to an existing account
-        const user = await prisma.user.update({
+        const user = await db.user.update({
           where: { id: linkedUserId },
           data: { googleId }
         });
@@ -61,25 +55,21 @@ passport.use(new GoogleStrategy({
       }
 
       // Normal Login / Signup
-      let user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { googleId: googleId },
-            { email: email }
-          ]
-        }
-      });
+      let user = await db.user.findUnique({ where: { googleId } });
+      if (!user) {
+         user = await db.user.findUnique({ where: { email } });
+      }
 
       if (user) {
         if (!user.googleId) {
-          user = await prisma.user.update({
+          user = await db.user.update({
             where: { id: user.id },
             data: { googleId, isVerified: true }
           });
         }
         return done(null, user);
       } else {
-        user = await prisma.user.create({
+        user = await db.user.create({
           data: {
             email,
             googleId,
@@ -111,7 +101,7 @@ passport.use(new GitHubStrategy({
 
       if (linkedUserId) {
         // We are linking to an existing account
-        const user = await prisma.user.update({
+        const user = await db.user.update({
           where: { id: linkedUserId },
           data: { githubId }
         });
@@ -119,25 +109,21 @@ passport.use(new GitHubStrategy({
       }
 
       // Normal Login / Signup
-      let user = await prisma.user.findFirst({
-        where: {
-          OR: [
-            { githubId: githubId },
-            { email: email }
-          ]
-        }
-      });
+      let user = await db.user.findUnique({ where: { githubId } });
+      if (!user) {
+         user = await db.user.findUnique({ where: { email } });
+      }
 
       if (user) {
         if (!user.githubId) {
-          user = await prisma.user.update({
+          user = await db.user.update({
             where: { id: user.id },
             data: { githubId, isVerified: true }
           });
         }
         return done(null, user);
       } else {
-        user = await prisma.user.create({
+        user = await db.user.create({
           data: {
             email,
             githubId,

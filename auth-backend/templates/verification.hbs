@@ -1,80 +1,84 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Verify Your Email</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Verify your email — {{appName}}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background-color:#0a0a0a;padding:40px 16px;">
-    <tr><td align="center">
-      <table width="100%" style="max-width:560px;" cellpadding="0" cellspacing="0">
+<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7;padding:32px 0;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
 
-        <!-- Logo -->
-        <tr><td style="padding-bottom:28px;">
-          <table cellpadding="0" cellspacing="0"><tr>
-            <td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:10px;width:36px;height:36px;text-align:center;vertical-align:middle;font-size:18px;">🔐</td>
-            <td style="padding-left:10px;font-size:15px;font-weight:700;color:#ffffff;vertical-align:middle;">Auth Platform</td>
-          </tr></table>
-        </td></tr>
-
-        <!-- Card -->
-        <tr><td style="background:#111111;border-radius:16px;border:1px solid #222222;overflow:hidden;">
+          <!-- Header -->
+          <tr>
+            <td style="background-color:#4f46e5;padding:32px 40px;text-align:center;">
+              {{#if logoUrl}}
+              <img src="{{logoUrl}}" alt="{{appName}}" width="40" style="display:block;margin:0 auto 12px;">
+              {{/if}}
+              <span style="color:#ffffff;font-size:20px;font-weight:600;">{{appName}}</span>
+            </td>
+          </tr>
 
           <!-- Body -->
-          <table width="100%" cellpadding="0" cellspacing="0">
-            <tr><td style="padding:36px 36px 0;">
-              <p style="margin:0 0 8px;font-size:15px;color:#a1a1aa;">Hi {{name}},</p>
-              <p style="margin:0 0 28px;font-size:15px;color:#a1a1aa;line-height:1.6;">This is your verification code:</p>
+          <tr>
+            <td style="padding:40px;">
+              <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Confirm your email address</h1>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
+                Hi {{userName}}, please confirm this is your email address to finish setting up your {{appName}} account.
+              </p>
 
-              <!-- OTP Boxes -->
-              <table cellpadding="0" cellspacing="0" style="margin-bottom:28px;">
+              {{#if verificationCode}}
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;">
                 <tr>
-                  {{#each digits}}
-                  <td style="padding-right:8px;">
-                    <div style="width:52px;height:60px;background:#1a1a1a;border:2px solid #7c3aed;border-radius:12px;text-align:center;line-height:60px;font-size:28px;font-weight:700;color:#ffffff;font-family:monospace;">{{this}}</div>
+                  <td align="center" style="background-color:#f3f4f6;border-radius:6px;padding:20px;">
+                    <span style="font-size:32px;font-weight:700;letter-spacing:6px;color:#111827;">{{verificationCode}}</span>
                   </td>
-                  {{/each}}
                 </tr>
               </table>
-
-              <p style="margin:0 0 28px;font-size:14px;color:#71717a;line-height:1.6;">This code will only be valid for the next <strong style="color:#e4e4e7;">15 minutes</strong>. If the code does not work, you can use this login verification link:</p>
-
-              <!-- CTA Button -->
-              <a href="{{verifyLink}}" style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#ffffff;text-decoration:none;padding:13px 28px;border-radius:10px;font-size:15px;font-weight:600;margin-bottom:36px;">Verify email</a>
-
-              <p style="margin:0 0 36px;font-size:14px;color:#52525b;">Thanks,<br/>The team</p>
-            </td></tr>
-
-            <!-- Divider -->
-            <tr><td style="border-top:1px solid #1f1f1f;padding:24px 36px;">
-              <p style="margin:0;font-size:12px;color:#3f3f46;line-height:1.7;">
-                This email was sent to <a href="mailto:{{email}}" style="color:#7c3aed;text-decoration:underline;">{{email}}</a>. If you'd rather not receive this kind of email, you can <a href="#" style="color:#7c3aed;text-decoration:underline;">unsubscribe</a> or <a href="#" style="color:#7c3aed;text-decoration:underline;">manage your email preferences</a>.
+              <p style="margin:0 0 24px;font-size:14px;color:#6b7280;text-align:center;">
+                Enter this code in the app to verify your email.
               </p>
-              <p style="margin:12px 0 0;font-size:12px;color:#3f3f46;">© 2027 Auth Platform</p>
-            </td></tr>
-          </table>
-        </td></tr>
+              {{/if}}
 
-        <!-- Footer -->
-        <tr><td style="padding:24px 0;">
-          <table width="100%" cellpadding="0" cellspacing="0"><tr>
-            <td>
-              <table cellpadding="0" cellspacing="0"><tr>
-                <td style="background:linear-gradient(135deg,#7c3aed,#4f46e5);border-radius:8px;width:28px;height:28px;text-align:center;vertical-align:middle;font-size:14px;">🔐</td>
-                <td style="padding-left:8px;font-size:13px;font-weight:600;color:#52525b;vertical-align:middle;">Auth Platform</td>
-              </tr></table>
-            </td>
-            <td align="right">
-              <a href="#" style="margin-left:12px;color:#52525b;text-decoration:none;font-size:13px;font-weight:600;">𝕏</a>
-              <a href="#" style="margin-left:12px;color:#52525b;text-decoration:none;font-size:13px;font-weight:600;">f</a>
-              <a href="#" style="margin-left:12px;color:#52525b;text-decoration:none;font-size:13px;font-weight:600;">◎</a>
-            </td>
-          </tr></table>
-        </td></tr>
+              {{#if verificationLink}}
+              <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto;">
+                <tr>
+                  <td align="center" style="border-radius:6px;background-color:#4f46e5;">
+                    <a href="{{verificationLink}}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
+                      Verify Email Address
+                    </a>
+                  </td>
+                </tr>
+              </table>
+              <p style="margin:16px 0 0;font-size:13px;color:#9ca3af;text-align:center;word-break:break-all;">
+                Or paste this link into your browser:<br>{{verificationLink}}
+              </p>
+              {{/if}}
 
-      </table>
-    </td></tr>
+              <p style="margin:32px 0 0;font-size:13px;line-height:1.6;color:#9ca3af;">
+                This {{#if verificationCode}}code{{else}}link{{/if}} expires in {{expiryMinutes}} minutes.
+                If you didn't create an account with {{appName}}, you can safely ignore this email.
+              </p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
+              <p style="margin:0;font-size:12px;color:#9ca3af;">
+                &copy; {{year}} {{appName}}. All rights reserved.
+              </p>
+              <p style="margin:8px 0 0;font-size:12px;color:#9ca3af;">
+                Need help? Contact <a href="mailto:{{supportEmail}}" style="color:#4f46e5;text-decoration:none;">{{supportEmail}}</a>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
   </table>
 </body>
 </html>

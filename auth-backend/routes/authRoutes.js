@@ -15,7 +15,7 @@ router.get('/check-username', async (req, res) => {
   if (clean.length < 3 || clean.length > 20 || !usernameRegex.test(clean)) {
     return res.json({ available: false, reason: 'invalid' });
   }
-  const prisma = require('../prismaClient');
+  const prisma = require('../db');
   const existing = await prisma.user.findUnique({ where: { username: clean } });
   res.json({ available: !existing });
 });
@@ -78,7 +78,7 @@ router.get('/google/callback',
       { expiresIn: '1d' }
     );
     
-    const prisma = require('../prismaClient');
+    const prisma = require('../db');
     
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';
@@ -129,7 +129,7 @@ router.get('/github/callback',
       { expiresIn: '1d' }
     );
     
-    const prisma = require('../prismaClient');
+    const prisma = require('../db');
 
     const userAgent = req.headers['user-agent'] || 'Unknown Device';
     const ipAddress = req.ip || req.connection.remoteAddress || 'Unknown IP';

@@ -93,11 +93,14 @@ exports.sendVerificationEmail = async (email, token, name) => {
     subject: 'Verify your email address',
     template: 'verification',
     context: {
-      name: name || 'there',
-      email,
-      digits,
-      verifyCode: token,
-      verifyLink: `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(email)}&token=${token}`,
+      appName: process.env.APP_NAME || 'Auth Platform',
+      logoUrl: process.env.LOGO_URL || '',
+      userName: name || 'there',
+      verificationCode: token,
+      verificationLink: `${process.env.FRONTEND_URL}/verify-email?email=${encodeURIComponent(email)}&token=${token}`,
+      expiryMinutes: 15,
+      year: new Date().getFullYear(),
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@myplatform.com'
     }
   });
 };
@@ -110,9 +113,13 @@ exports.sendWelcomeEmail = async (email, name) => {
     subject: 'Welcome to Auth Platform!',
     template: 'welcome',
     context: {
-      name: name || 'there',
-      email,
-      loginLink,
+      appName: process.env.APP_NAME || 'Auth Platform',
+      logoUrl: process.env.LOGO_URL || '',
+      userName: name || 'there',
+      verificationLink: loginLink,
+      features: ['Secure your account', 'Update your profile'],
+      year: new Date().getFullYear(),
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@myplatform.com'
     }
   });
 };
@@ -125,11 +132,14 @@ exports.sendPasswordResetEmail = async (email, token, name) => {
     subject: 'Reset Your Password',
     template: 'reset-password',
     context: {
-      name: name || 'there',
-      email,
-      digits,
-      resetCode: token,
+      appName: process.env.APP_NAME || 'Auth Platform',
+      logoUrl: process.env.LOGO_URL || '',
+      userName: name || 'there',
       resetLink: `${process.env.FRONTEND_URL}/reset-password?email=${encodeURIComponent(email)}&token=${token}`,
+      expiryMinutes: 60,
+      ipAddress: '',
+      year: new Date().getFullYear(),
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@myplatform.com'
     }
   });
 };
@@ -143,13 +153,18 @@ exports.sendSecurityAlertEmail = async (email, { loginTime, location, ipAddress,
     subject: `New sign-in to your account on ${loginTime}`,
     template: 'security-alert',
     context: {
-      loginTime: loginTime || 'Unknown',
-      location: location || 'Unknown',
+      appName: process.env.APP_NAME || 'Auth Platform',
+      logoUrl: process.env.LOGO_URL || '',
+      alertTitle: alertMessage || 'New sign-in detected',
+      userName: email.split('@')[0],
+      eventType: 'Sign-in',
+      timestamp: loginTime || 'Unknown',
       ipAddress: ipAddress || 'Unknown',
-      via2FA,
-      // legacy fallback for non-login alerts (password change, opt-in, etc.)
-      alertMessage: alertMessage || null,
-      actionLink: `${process.env.FRONTEND_URL}/dashboard/settings`,
+      location: location || 'Unknown',
+      deviceInfo: via2FA ? '2FA Used' : 'Standard Login',
+      secureAccountLink: `${process.env.FRONTEND_URL}/dashboard/settings`,
+      year: new Date().getFullYear(),
+      supportEmail: process.env.SUPPORT_EMAIL || 'support@myplatform.com'
     },
     headers: {
       'Message-ID': messageId,
