@@ -3,6 +3,7 @@ const router = express.Router();
 const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const authController = require('../controllers/authController');
+const analyticsController = require('../controllers/analyticsController');
 
 // Public: check username availability (used during signup)
 router.get('/check-username', async (req, res) => {
@@ -30,6 +31,10 @@ router.post('/reset-password', authController.resetPassword);
 // Public User Profile Route
 router.get('/user/:username', authController.getPublicProfile);
 
+// Public Analytics Tracking
+router.post('/analytics/track-view', analyticsController.trackView);
+router.post('/analytics/track-click', analyticsController.trackClick);
+
 const authMiddleware = require('../middleware/authMiddleware');
 const settingsController = require('../controllers/settingsController');
 
@@ -39,7 +44,8 @@ router.put('/profile', authMiddleware, settingsController.updateProfile);
 router.patch('/preferences', authMiddleware, settingsController.updatePreferences);
 router.post('/change-password', authMiddleware, settingsController.changePassword);
 router.get('/sessions', authMiddleware, settingsController.getSessions);
-router.get('/analytics', authMiddleware, settingsController.getAnalytics);
+router.get('/analytics', authMiddleware, settingsController.getAnalytics); // Security Logs
+router.get('/analytics/profile', authMiddleware, analyticsController.getProfileStats); // Profile Stats
 router.delete('/sessions/others', authMiddleware, settingsController.revokeOtherSessions);
 router.delete('/sessions/:id', authMiddleware, settingsController.revokeSession);
 router.delete('/providers/:provider', authMiddleware, settingsController.disconnectProvider);

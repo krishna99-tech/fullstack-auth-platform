@@ -1,6 +1,8 @@
 import { notFound } from 'next/navigation';
 import { CalendarDays, MapPin, Link as LinkIcon, ShieldCheck, Lock, UserPlus, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import TrackView from './TrackView';
+import TrackLink from './TrackLink';
 
 interface UserProfile {
   id: string;
@@ -160,7 +162,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           </div>
 
           <div className="max-w-2xl w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
-          
+          <TrackView username={user.username} />
           {/* Banner */}
           <div className={`h-32 w-full ${bannerClass}`} />
           
@@ -215,19 +217,19 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
             {user.socialLinks && (user.socialLinks.github || user.socialLinks.twitter || user.socialLinks.linkedin) && (
               <div className="mt-8 flex items-center gap-4">
                 {user.socialLinks.github && (
-                  <a href={`https://github.com/${user.socialLinks.github}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white transition-colors">
+                  <TrackLink username={user.username} url={`https://github.com/${user.socialLinks.github}`} title="GitHub" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white transition-colors">
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
-                  </a>
+                  </TrackLink>
                 )}
                 {user.socialLinks.twitter && (
-                  <a href={`https://twitter.com/${user.socialLinks.twitter}`} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#1DA1F2] dark:hover:text-[#1DA1F2] transition-colors">
+                  <TrackLink username={user.username} url={`https://twitter.com/${user.socialLinks.twitter}`} title="Twitter" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#1DA1F2] dark:hover:text-[#1DA1F2] transition-colors">
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M23.954 4.569c-.885.389-1.83.654-2.825.775 1.014-.611 1.794-1.574 2.163-2.723-.951.555-2.005.959-3.127 1.184-.896-.959-2.173-1.559-3.591-1.559-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124C7.691 8.094 4.066 6.13 1.64 3.161c-.427.722-.666 1.561-.666 2.475 0 1.71.87 3.213 2.188 4.096-.807-.026-1.566-.248-2.228-.616v.061c0 2.385 1.693 4.374 3.946 4.827-.413.111-.849.171-1.296.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.377 4.604 3.417-1.68 1.319-3.809 2.105-6.102 2.105-.39 0-.779-.023-1.17-.067 2.189 1.394 4.768 2.209 7.557 2.209 9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63.961-.689 1.8-1.56 2.46-2.548l-.047-.02z"/></svg>
-                  </a>
+                  </TrackLink>
                 )}
                 {user.socialLinks.linkedin && (
-                  <a href={user.socialLinks.linkedin} target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#0A66C2] dark:hover:text-[#0A66C2] transition-colors">
+                  <TrackLink username={user.username} url={user.socialLinks.linkedin} title="LinkedIn" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#0A66C2] dark:hover:text-[#0A66C2] transition-colors">
                     <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                  </a>
+                  </TrackLink>
                 )}
               </div>
             )}
@@ -238,12 +240,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 {user.customLinks.map((link, idx) => {
                   if (!link.title || !link.url) return null;
                   return (
-                    <a key={idx} href={link.url.startsWith('http') ? link.url : `https://${link.url}`} target="_blank" rel="noopener noreferrer" className={`group flex items-center justify-between p-4 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md ${accentHoverClass}`}>
+                    <TrackLink key={idx} username={user.username} url={link.url} title={link.title} className={`group flex items-center justify-between p-4 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md ${accentHoverClass}`}>
                       <div className="flex items-center gap-3">
                         <span className="font-semibold text-zinc-900 dark:text-zinc-100">{link.title}</span>
                       </div>
                       <ExternalLink className={`w-4 h-4 text-zinc-400 transition-colors ${accentHoverClass}`} />
-                    </a>
+                    </TrackLink>
                   );
                 })}
               </div>

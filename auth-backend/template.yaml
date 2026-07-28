@@ -66,12 +66,29 @@ Globals:
         SESSIONS_TABLE: !Ref SessionsTable
         AUTH_SESSIONS_TABLE: !Ref AuthSessionsTable
         AUDIT_LOGS_TABLE: !Ref AuditLogsTable
+        ANALYTICS_TABLE: !Ref AnalyticsTable
 
 Resources:
   AuditLogsTable:
     Type: AWS::DynamoDB::Table
     Properties:
       TableName: auth-audit-logs
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
+  AnalyticsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: auth-analytics
       AttributeDefinitions:
         - AttributeName: userId
           AttributeType: S
@@ -187,6 +204,8 @@ Resources:
             TableName: !Ref AuthSessionsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref AuditLogsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref AnalyticsTable
       Events:
         ProxyApiRoot:
           Type: Api

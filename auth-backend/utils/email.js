@@ -33,18 +33,21 @@ exports.getLocationFromIP = (ip) => {
       cleanIp.startsWith('fe80');  // IPv6 link-local
 
     if (isPrivate) {
-      return resolve('Local / Private Network');
+      // For local development, if the request is from localhost, 
+      // fetch the server's own public IP location instead of returning "Local Network".
+      cleanIp = ''; 
     }
 
-    const url = `http://ip-api.com/json/${cleanIp}`;
-    http.get(url, (res) => {
+    const url = `https://ipinfo.io/${cleanIp ? cleanIp + '/' : ''}json`;
+    https.get(url, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (json.status === 'success') {
-            const parts = [json.city, json.regionName, json.country].filter(Boolean);
+          // ipinfo returns { city, region, country }
+          if (json.city || json.region || json.country) {
+            const parts = [json.city, json.region, json.country].filter(Boolean);
             resolve(parts.length > 0 ? parts.join(', ') : 'Unknown Location');
           } else {
             resolve('Unknown Location');
