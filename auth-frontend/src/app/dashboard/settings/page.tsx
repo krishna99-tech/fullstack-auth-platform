@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Shield, 
   Monitor, 
@@ -13,7 +14,8 @@ import {
   Camera,
   Trash2,
   Edit3,
-  RefreshCcw
+  RefreshCcw,
+  X
 } from 'lucide-react';
 
 import { Input } from "@/components/ui/input";
@@ -27,6 +29,7 @@ import { Button as AriaButton } from "react-aria-components";
 interface UserProfile {
   id: string;
   email: string;
+  username: string | null;
   name: string | null;
   phoneNumber: string | null;
   createdAt: string;
@@ -55,6 +58,7 @@ export default function SettingsPage() {
 
   // Profile Edit State
   const [editName, setEditName] = useState('');
+  const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
   const [editPhone, setEditPhone] = useState('');
   const [isUpdatingProfile, setIsUpdatingProfile] = useState(false);
@@ -110,6 +114,7 @@ export default function SettingsPage() {
           setEditName(userData?.name || '');
           setEditEmail(userData?.email || '');
           setEditPhone(userData?.phoneNumber || '');
+          setEditUsername(userData?.username || '');
         }
 
         if (sessionsRes.ok) {
@@ -134,19 +139,20 @@ export default function SettingsPage() {
 
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json' 
         },
-        body: JSON.stringify({ name: editName, email: editEmail, phoneNumber: editPhone })
+        body: JSON.stringify({ name: editName, email: editEmail, phoneNumber: editPhone, username: editUsername })
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to update profile');
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to update profile');
 
-      setProfile(data.user);
+      setProfile(prev => prev ? { ...prev, ...(data.user || {}) } : data.user);
+      if (data.user?.username !== undefined) setEditUsername(data.user.username || '');
       setProfileMsg('Profile updated successfully!');
       setTimeout(() => setProfileMsg(''), 3000);
     } catch (err: any) {
@@ -179,7 +185,7 @@ export default function SettingsPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.message || 'Failed to change password');
+      if (!res.ok) throw new Error(data.error || data.message || 'Failed to change password');
 
       setPwdMsg('Password updated successfully!');
       setCurrentPassword('');
@@ -306,12 +312,15 @@ export default function SettingsPage() {
   const handleUnlinkProvider = async (provider: 'google' | 'github') => {
     try {
       const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/unlink/${provider}`, {
-        method: 'POST',
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/providers/${provider}`, {
+        method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
+      const data = await res.json();
       if (res.ok) {
         setProfile(prev => prev ? { ...prev, [`has${provider.charAt(0).toUpperCase() + provider.slice(1)}`]: false } : null);
+      } else {
+        alert(data.error || 'Failed to unlink account');
       }
     } catch (err) {
       console.error(err);
@@ -323,7 +332,7 @@ export default function SettingsPage() {
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/preferences`, {
-        method: 'PUT',
+        method: 'PATCH',
         headers: { 
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json' 
@@ -423,6 +432,15 @@ export default function SettingsPage() {
           <>
             {/* Banner — sits directly in Dialog, outside any scrollable container */}
             <div className="h-32 md:h-40 w-full bg-gradient-to-r from-[#d9b8f1] via-[#f3c5e8] to-[#f9d6cd] dark:from-[#2e1d45] dark:via-[#422247] dark:to-[#4e2f2e] relative flex-shrink-0">
+              {/* Close button — top-left */}
+              <button
+                type="button"
+                onClick={close}
+                aria-label="Close settings"
+                className="absolute top-3 left-3 z-10 flex items-center justify-center w-8 h-8 rounded-full bg-black/20 hover:bg-black/40 dark:bg-black/30 dark:hover:bg-black/60 text-white backdrop-blur-sm transition-all duration-150 hover:scale-110"
+              >
+                <X className="w-4 h-4" />
+              </button>
               <div className="absolute top-4 right-4 flex items-center gap-2">
                 <Button size="icon" variant="ghost" className="text-foreground/70 hover:text-foreground hover:bg-black/10 dark:hover:bg-black/40 h-8 w-8 rounded-full">
                   <Trash2 className="w-4 h-4" />
@@ -448,7 +466,7 @@ export default function SettingsPage() {
                   {editName || profile?.name || 'Your Name'}
                   {profile?.isVerified && <span className="text-blue-500"><CheckCircle2 className="w-5 h-5 fill-current text-background" /></span>}
                 </h2>
-                <p className="text-muted-foreground">@{editName ? editName.toLowerCase().replace(/\s+/g, '') : (profile?.name || 'username').toLowerCase().replace(/\s+/g, '')}</p>
+                <p className="text-muted-foreground">@{editUsername || profile?.username || 'username'}</p>
               </div>
             </div>
 
@@ -522,18 +540,26 @@ export default function SettingsPage() {
                 <Label className="text-muted-foreground font-medium flex gap-1">Username <span className="text-amber-500">*</span></Label>
                 <div className="flex items-center rounded-md border border-border/50 bg-transparent h-11 overflow-hidden focus-within:ring-1 focus-within:ring-border transition-shadow">
                   <div className="px-4 text-muted-foreground/70 bg-transparent border-r border-border/50 h-full flex items-center shrink-0">
-                    untitled.com/@
+                    @
                   </div>
                   <input 
                     type="text" 
                     className="flex-1 bg-transparent border-none outline-none px-3 text-sm h-full w-full text-foreground" 
                     placeholder="username" 
-                    defaultValue={editName ? editName.toLowerCase().replace(/\s+/g, '') : "siennahewitt"} 
+                    value={editUsername}
+                    onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}
+                    maxLength={20}
                   />
                   <div className="px-3 shrink-0">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    {editUsername && editUsername === profile?.username
+                      ? <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      : editUsername.length >= 3
+                        ? <CheckCircle2 className="w-4 h-4 text-muted-foreground/30" />
+                        : null
+                    }
                   </div>
                 </div>
+                <p className="text-xs text-muted-foreground/60">3–20 characters · letters, numbers, underscores only</p>
               </div>
 
               {/* Country Row */}
@@ -565,7 +591,12 @@ export default function SettingsPage() {
                 type="submit" 
                 form="profile-form"
                 className="bg-indigo-600 hover:bg-indigo-700 dark:bg-[#7e56db] dark:hover:bg-[#6c48c4] text-white rounded-lg px-6 font-semibold shadow-md shadow-indigo-500/20"
-                disabled={isUpdatingProfile || (editName === (profile?.name || '') && editPhone === (profile?.phoneNumber || '') && editEmail === profile?.email)}
+                disabled={isUpdatingProfile || (
+                editName === (profile?.name || '') &&
+                editPhone === (profile?.phoneNumber || '') &&
+                editEmail === profile?.email &&
+                editUsername === (profile?.username || '')
+              )}
               >
                 {isUpdatingProfile ? 'Saving...' : 'Save'}
               </Button>
@@ -617,7 +648,10 @@ export default function SettingsPage() {
             )}
             <form id="password-form" onSubmit={handleChangePassword} className="space-y-5">
               <div className="space-y-2">
-                <Label>Current Password</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Current Password</Label>
+                  <Link href="/forgot-password" className="text-xs text-primary hover:underline">Forgot password?</Link>
+                </div>
                 <Input type="password" placeholder="••••••••" value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} required />
               </div>
               <div className="space-y-2">

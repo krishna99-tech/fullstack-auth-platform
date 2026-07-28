@@ -4,6 +4,22 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const authController = require('../controllers/authController');
 
+// Public: check username availability (used during signup)
+router.get('/check-username', async (req, res) => {
+  const { username } = req.query;
+  if (!username || typeof username !== 'string') {
+    return res.status(400).json({ error: 'Username is required' });
+  }
+  const clean = username.trim().toLowerCase();
+  const usernameRegex = /^[a-zA-Z0-9_]+$/;
+  if (clean.length < 3 || clean.length > 20 || !usernameRegex.test(clean)) {
+    return res.json({ available: false, reason: 'invalid' });
+  }
+  const prisma = require('../prismaClient');
+  const existing = await prisma.user.findUnique({ where: { username: clean } });
+  res.json({ available: !existing });
+});
+
 router.post('/signup', authController.signup);
 router.post('/verify', authController.verifyEmail);
 router.post('/login', authController.login);
@@ -19,7 +35,7 @@ router.put('/profile', authMiddleware, settingsController.updateProfile);
 router.patch('/preferences', authMiddleware, settingsController.updatePreferences);
 router.post('/change-password', authMiddleware, settingsController.changePassword);
 router.get('/sessions', authMiddleware, settingsController.getSessions);
-router.delete('/sessions', authMiddleware, settingsController.revokeOtherSessions);
+router.delete('/sessions/others', authMiddleware, settingsController.revokeOtherSessions);
 router.delete('/sessions/:id', authMiddleware, settingsController.revokeSession);
 router.delete('/providers/:provider', authMiddleware, settingsController.disconnectProvider);
 router.delete('/me', authMiddleware, settingsController.deleteAccount);

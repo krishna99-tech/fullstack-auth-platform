@@ -8,6 +8,7 @@ exports.getProfile = async (req, res) => {
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         phoneNumber: true,
         isVerified: true,
@@ -29,6 +30,7 @@ exports.getProfile = async (req, res) => {
     const profile = {
       id: user.id,
       email: user.email,
+      username: user.username,
       name: user.name,
       phoneNumber: user.phoneNumber,
       isVerified: user.isVerified,
@@ -50,7 +52,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, email } = req.body;
+    const { name, phoneNumber, email, username } = req.body;
     
     const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
     if (!user) {
@@ -60,6 +62,18 @@ exports.updateProfile = async (req, res) => {
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+
+    // Handle username change
+    if (username !== undefined && username !== user.username) {
+      const cleanUsername = username.trim().toLowerCase();
+      const usernameRegex = /^[a-zA-Z0-9_]+$/;
+      if (!cleanUsername || cleanUsername.length < 3 || cleanUsername.length > 20 || !usernameRegex.test(cleanUsername)) {
+        return res.status(400).json({ error: 'Username must be 3-20 characters, letters/numbers/underscores only' });
+      }
+      const taken = await prisma.user.findUnique({ where: { username: cleanUsername } });
+      if (taken) return res.status(400).json({ error: 'Username is already taken' });
+      updates.username = cleanUsername;
+    }
 
     // Handle email change logic
     if (email && email !== user.email) {
@@ -94,6 +108,7 @@ exports.updateProfile = async (req, res) => {
       select: {
         id: true,
         email: true,
+        username: true,
         name: true,
         phoneNumber: true,
         isVerified: true,

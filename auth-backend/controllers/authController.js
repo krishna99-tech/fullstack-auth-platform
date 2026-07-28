@@ -6,16 +6,39 @@ const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendSec
 
 exports.signup = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, name, username } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password are required' });
     }
 
-    // Check if user already exists
+    if (!name || name.trim().length < 2) {
+      return res.status(400).json({ error: 'Full name must be at least 2 characters' });
+    }
+
+    if (!username || username.trim().length < 3) {
+      return res.status(400).json({ error: 'Username must be at least 3 characters' });
+    }
+
+    const usernameRegex = /^[a-zA-Z0-9_]+$/;
+    if (!usernameRegex.test(username.trim())) {
+      return res.status(400).json({ error: 'Username can only contain letters, numbers, and underscores' });
+    }
+
+    if (username.trim().length > 20) {
+      return res.status(400).json({ error: 'Username must be 20 characters or fewer' });
+    }
+
+    // Check if email is taken
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) {
       return res.status(400).json({ error: 'Email already in use' });
+    }
+
+    // Check if username is taken
+    const existingUsername = await prisma.user.findUnique({ where: { username: username.trim().toLowerCase() } });
+    if (existingUsername) {
+      return res.status(400).json({ error: 'Username is already taken' });
     }
 
     // Hash password
@@ -30,6 +53,8 @@ exports.signup = async (req, res) => {
       data: {
         email,
         passwordHash,
+        name: name.trim(),
+        username: username.trim().toLowerCase(),
         verificationToken,
         verificationCodeExpiry,
       }
@@ -40,8 +65,6 @@ exports.signup = async (req, res) => {
       await sendVerificationEmail(user.email, verificationToken, user.name);
     } catch (emailError) {
       console.error('Error sending email:', emailError);
-      // In production, we might still return success but note the email failed,
-      // or we handle this more gracefully. For now, we continue.
     }
 
     res.status(201).json({ message: 'User created. Please check your email to verify your account.' });
