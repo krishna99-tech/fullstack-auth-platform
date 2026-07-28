@@ -10,7 +10,9 @@ import {
   MonitorSmartphone,
   Key,
   ShieldCheck,
-  AlertTriangle
+  AlertTriangle,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface AuditLog {
@@ -28,25 +30,31 @@ export default function AnalyticsPage() {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ totalLogins: 0, failedLogins: 0, passwordChanges: 0 });
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 5;
+
   useEffect(() => {
     const fetchLogs = async () => {
+      setLoading(true);
       const token = localStorage.getItem('token');
       if (!token) {
         router.push('/login');
         return;
       }
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/analytics`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/analytics?page=${currentPage}&limit=${limit}`, {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         if (res.ok) {
           const data = await res.json();
           setLogs(data.logs || []);
-          
-          const failed = data.logs.filter((l: AuditLog) => l.event.toLowerCase().includes('failed')).length;
-          const logins = data.logs.filter((l: AuditLog) => l.event.toLowerCase().includes('login') && !l.event.toLowerCase().includes('failed')).length;
-          const pwChanges = data.logs.filter((l: AuditLog) => l.event.toLowerCase().includes('password')).length;
-          setStats({ totalLogins: logins, failedLogins: failed, passwordChanges: pwChanges });
+          if (data.stats) {
+            setStats(data.stats);
+          }
+          if (data.pagination) {
+            setTotalPages(data.pagination.totalPages || 1);
+          }
         }
       } catch (err) {
         console.error('Failed to load analytics', err);
@@ -55,7 +63,7 @@ export default function AnalyticsPage() {
       }
     };
     fetchLogs();
-  }, [router]);
+  }, [router, currentPage]);
 
   const getIconForEvent = (event: string, type: string) => {
     if (event.toLowerCase().includes('login')) return type === 'success' ? ArrowUpRight : ShieldAlert;
@@ -196,6 +204,30 @@ export default function AnalyticsPage() {
             </tbody>
           </table>
         </div>
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-zinc-200 dark:border-[#333] flex items-center justify-between bg-zinc-50/30 dark:bg-[#0a0a0a]/50">
+            <p className="text-sm text-[#666]">
+              Page <span className="font-medium text-black dark:text-white">{currentPage}</span> of <span className="font-medium text-black dark:text-white">{totalPages}</span>
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
       
     </div>

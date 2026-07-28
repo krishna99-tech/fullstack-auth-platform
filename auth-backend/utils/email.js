@@ -61,7 +61,7 @@ exports.getLocationFromIP = (ip) => {
 const transporter = nodemailer.createTransport({
   host: process.env.SMTP_HOST,
   port: parseInt(process.env.SMTP_PORT) || 587,
-  secure: false,       // false = STARTTLS (required for port 587)
+  secure: parseInt(process.env.SMTP_PORT) === 465, // true for 465, false for 587 (STARTTLS)
   requireTLS: true,    // enforce TLS upgrade via STARTTLS
   auth: {
     user: process.env.SMTP_USER,

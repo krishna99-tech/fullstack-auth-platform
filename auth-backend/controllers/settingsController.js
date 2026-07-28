@@ -464,12 +464,33 @@ exports.resendVerification = async (req, res) => {
 
 exports.getAnalytics = async (req, res) => {
   try {
-    const logs = await prisma.auditLog.findMany({ 
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+
+    // Fetch all logs to calculate global stats
+    const allLogs = await prisma.auditLog.findMany({ 
       where: { userId: req.user.userId },
-      orderBy: { createdAt: 'desc' },
-      take: 50
+      orderBy: { createdAt: 'desc' }
     });
-    res.json({ logs });
+
+    const failedLogins = allLogs.filter(l => l.event.toLowerCase().includes('failed')).length;
+    const totalLogins = allLogs.filter(l => l.event.toLowerCase().includes('login') && !l.event.toLowerCase().includes('failed')).length;
+    const passwordChanges = allLogs.filter(l => l.event.toLowerCase().includes('password')).length;
+
+    const total = allLogs.length;
+    const skip = (page - 1) * limit;
+    const paginatedLogs = allLogs.slice(skip, skip + limit);
+    
+    res.json({ 
+      logs: paginatedLogs, 
+      stats: { totalLogins, failedLogins, passwordChanges },
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     console.error('Failed to get analytics:', err);
     res.status(500).json({ error: 'Server error' });

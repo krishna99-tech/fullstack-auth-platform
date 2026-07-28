@@ -137,7 +137,7 @@ const db = {
       await docClient.send(new PutCommand({ TableName: AUDIT_LOGS_TABLE, Item: item }));
       return item;
     },
-    findMany: async ({ where }) => {
+    findMany: async ({ where, skip, take }) => {
       if (where.userId) {
         // Query logs for a user, sorted by timestamp descending
         const params = {
@@ -146,12 +146,33 @@ const db = {
           ExpressionAttributeNames: { '#u': 'userId' },
           ExpressionAttributeValues: { ':u': where.userId },
           ScanIndexForward: false, // newest first
-          Limit: 50 // cap at 50 recent events
         };
         const result = await docClient.send(new QueryCommand(params));
-        return result.Items || [];
+        let items = result.Items || [];
+        
+        // In-memory pagination for simple mock ORM
+        if (skip !== undefined || take !== undefined) {
+          const s = skip || 0;
+          const t = take || items.length;
+          items = items.slice(s, s + t);
+        }
+        return items;
       }
       return [];
+    },
+    count: async ({ where }) => {
+      if (where.userId) {
+        const params = {
+          TableName: AUDIT_LOGS_TABLE,
+          KeyConditionExpression: '#u = :u',
+          ExpressionAttributeNames: { '#u': 'userId' },
+          ExpressionAttributeValues: { ':u': where.userId },
+          Select: 'COUNT'
+        };
+        const result = await docClient.send(new QueryCommand(params));
+        return result.Count || 0;
+      }
+      return 0;
     }
   }
 };

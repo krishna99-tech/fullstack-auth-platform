@@ -28,7 +28,7 @@ const authMiddleware = async (req, res, next) => {
     // 4. Update lastActive timestamp in background
     prisma.session.update({
       where: { id: session.id },
-      data: { lastActive: new Date() }
+      data: { lastActive: new Date().toISOString() }
     }).catch(err => console.error('Failed to update session activity:', err));
 
     req.sessionId = session.id;
