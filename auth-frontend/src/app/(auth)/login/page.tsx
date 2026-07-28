@@ -13,6 +13,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
   
   // MFA States
   const [mfaRequired, setMfaRequired] = useState(false);
@@ -33,6 +34,7 @@ export default function Login() {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setNeedsVerification(false);
 
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
@@ -43,6 +45,9 @@ export default function Login() {
       const data = await res.json();
 
       if (!res.ok) {
+        if (data.needsVerification) {
+          setNeedsVerification(true);
+        }
         throw new Error(data.error || 'Failed to login');
       }
 
@@ -98,7 +103,19 @@ export default function Login() {
         {mfaRequired ? 'Enter your 2FA code to continue' : 'Sign in to your account to continue'}
       </p>
       
-      {error && <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">{error}</div>}
+      {error && (
+        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm flex flex-col gap-2">
+          <span>{error}</span>
+          {needsVerification && (
+            <Link 
+              href={`/verify-email?email=${encodeURIComponent(email)}`}
+              className="text-primary font-medium hover:underline inline-flex items-center"
+            >
+              Go to verification page &rarr;
+            </Link>
+          )}
+        </div>
+      )}
       
       {mfaRequired ? (
         <form onSubmit={handleVerifyMfa} className="space-y-5 animate-fade-in-up">
