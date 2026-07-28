@@ -1,5 +1,6 @@
 const bcrypt = require('bcrypt');
 const prisma = require('../db');
+const { logSecurityEvent } = require('../utils/logger');
 
 exports.getProfile = async (req, res) => {
   try {
@@ -19,6 +20,7 @@ exports.getProfile = async (req, res) => {
         mfaEnabled: true,
         emailNotifications: true,
         accentColor: true,
+        isProfilePublic: true,
       }
     });
 
@@ -41,6 +43,7 @@ exports.getProfile = async (req, res) => {
       mfaEnabled: user.mfaEnabled,
       emailNotifications: user.emailNotifications,
       accentColor: user.accentColor,
+      isProfilePublic: user.isProfilePublic !== false, // Default to true if undefined
     };
 
     res.json(profile);
@@ -116,6 +119,8 @@ exports.updateProfile = async (req, res) => {
       }
     });
 
+    await logSecurityEvent(req.user.userId, 'Profile updated', req.ip || 'Unknown IP', 'Unknown Location', 'info');
+
     res.json({ message: 'Profile updated successfully', user: updatedUser });
   } catch (error) {
     console.error('Update profile error:', error);
@@ -151,6 +156,8 @@ exports.disconnectProvider = async (req, res) => {
       where: { id: user.id },
       data: updates
     });
+
+    await logSecurityEvent(req.user.userId, `Disconnected ${provider}`, req.ip || 'Unknown IP', 'Unknown Location', 'warning');
 
     res.json({ message: `${provider} disconnected successfully` });
   } catch (error) {
@@ -208,6 +215,8 @@ exports.changePassword = async (req, res) => {
       }
     }
 
+    await logSecurityEvent(req.user.userId, 'Password changed', req.ip || 'Unknown IP', 'Unknown Location', 'warning');
+
     res.json({ message: 'Password changed successfully' });
   } catch (error) {
     console.error('Change password error:', error);
@@ -260,6 +269,8 @@ exports.revokeSession = async (req, res) => {
       where: { id: sessionId }
     });
 
+    await logSecurityEvent(req.user.userId, 'Session revoked', req.ip || 'Unknown IP', 'Unknown Location', 'info');
+
     res.json({ message: 'Session revoked successfully' });
   } catch (error) {
     console.error('Revoke session error:', error);
@@ -311,6 +322,7 @@ exports.verifyAndEnableMFA = async (req, res) => {
         where: { id: user.id },
         data: { mfaEnabled: true }
       });
+      await logSecurityEvent(req.user.userId, 'MFA enabled', req.ip || 'Unknown IP', 'Unknown Location', 'info');
       res.json({ message: 'MFA enabled successfully' });
     } else {
       res.status(400).json({ error: 'Invalid MFA code' });
@@ -327,6 +339,7 @@ exports.disableMFA = async (req, res) => {
       where: { id: req.user.userId },
       data: { mfaEnabled: false, mfaSecret: null }
     });
+    await logSecurityEvent(req.user.userId, 'MFA disabled', req.ip || 'Unknown IP', 'Unknown Location', 'danger');
     res.json({ message: 'MFA disabled successfully' });
   } catch (error) {
     console.error('Disable MFA error:', error);
@@ -336,11 +349,12 @@ exports.disableMFA = async (req, res) => {
 
 exports.updatePreferences = async (req, res) => {
   try {
-    const { emailNotifications, accentColor } = req.body;
+    const { emailNotifications, accentColor, isProfilePublic } = req.body;
 
     const updates = {};
     if (emailNotifications !== undefined) updates.emailNotifications = emailNotifications;
     if (accentColor !== undefined) updates.accentColor = accentColor;
+    if (isProfilePublic !== undefined) updates.isProfilePublic = isProfilePublic;
 
     if (Object.keys(updates).length === 0) {
       return res.status(400).json({ error: 'No preferences provided to update' });
@@ -371,7 +385,8 @@ exports.updatePreferences = async (req, res) => {
     res.json({ 
       message: 'Preferences updated successfully', 
       emailNotifications: user.emailNotifications,
-      accentColor: user.accentColor
+      accentColor: user.accentColor,
+      isProfilePublic: user.isProfilePublic
     });
   } catch (error) {
     console.error('Update preferences error:', error);
@@ -443,5 +458,20 @@ exports.resendVerification = async (req, res) => {
   } catch (error) {
     console.error('Resend verification error:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+
+exports.getAnalytics = async (req, res) => {
+  try {
+    const logs = await prisma.auditLog.findMany({ 
+      where: { userId: req.user.userId },
+      orderBy: { createdAt: 'desc' },
+      take: 50
+    });
+    res.json({ logs });
+  } catch (err) {
+    console.error('Failed to get analytics:', err);
+    res.status(500).json({ error: 'Server error' });
   }
 };

@@ -7,6 +7,7 @@ const docClient = DynamoDBDocumentClient.from(client);
 
 const USERS_TABLE = process.env.USERS_TABLE || 'auth-users';
 const AUTH_SESSIONS_TABLE = process.env.AUTH_SESSIONS_TABLE || 'auth-user-sessions';
+const AUDIT_LOGS_TABLE = process.env.AUDIT_LOGS_TABLE || 'auth-audit-logs';
 
 async function queryByIndex(tableName, indexName, keyName, keyValue) {
   const params = {
@@ -124,6 +125,33 @@ const db = {
           }
         }
       }
+    }
+  },
+  auditLog: {
+    create: async ({ data }) => {
+      const timestamp = new Date().toISOString();
+      const item = { 
+        timestamp,
+        ...data 
+      };
+      await docClient.send(new PutCommand({ TableName: AUDIT_LOGS_TABLE, Item: item }));
+      return item;
+    },
+    findMany: async ({ where }) => {
+      if (where.userId) {
+        // Query logs for a user, sorted by timestamp descending
+        const params = {
+          TableName: AUDIT_LOGS_TABLE,
+          KeyConditionExpression: '#u = :u',
+          ExpressionAttributeNames: { '#u': 'userId' },
+          ExpressionAttributeValues: { ':u': where.userId },
+          ScanIndexForward: false, // newest first
+          Limit: 50 // cap at 50 recent events
+        };
+        const result = await docClient.send(new QueryCommand(params));
+        return result.Items || [];
+      }
+      return [];
     }
   }
 };

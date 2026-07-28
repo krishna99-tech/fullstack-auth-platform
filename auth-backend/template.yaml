@@ -2,6 +2,61 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: Serverless Auth Backend
 
+Parameters:
+  FrontendUrl:
+    Type: String
+    Default: ""
+    Description: "The frontend URL for CORS and redirects"
+  BackendUrl:
+    Type: String
+    Default: ""
+    Description: "The backend API URL"
+  JwtSecret:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: "The secret used to sign JWTs"
+  SmtpHost:
+    Type: String
+    Default: ""
+    Description: "The SMTP server host"
+  SmtpPort:
+    Type: String
+    Default: "587"
+    Description: "The SMTP server port"
+  SmtpUser:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: "The SMTP username"
+  SmtpPass:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: "The SMTP password"
+  MailFrom:
+    Type: String
+    Default: ""
+    Description: "The email address to send emails from"
+  GoogleClientId:
+    Type: String
+    Default: ""
+    Description: "Google OAuth Client ID"
+  GoogleClientSecret:
+    Type: String
+    Default: ""
+    NoEcho: true
+    Description: "Google OAuth Client Secret"
+  GithubClientId:
+    Type: String
+    Default: "paste_your_github_client_id_here"
+    Description: "GitHub OAuth Client ID"
+  GithubClientSecret:
+    Type: String
+    Default: "paste_your_github_client_secret_here"
+    NoEcho: true
+    Description: "GitHub OAuth Client Secret"
+
 Globals:
   Function:
     Timeout: 30
@@ -10,12 +65,37 @@ Globals:
         USERS_TABLE: !Ref UsersTable
         SESSIONS_TABLE: !Ref SessionsTable
         AUTH_SESSIONS_TABLE: !Ref AuthSessionsTable
-        # Add your backend env vars here (or in secrets manager)
-        # FRONTEND_URL: 
-        # JWT_SECRET: 
-        # SMTP_HOST: 
+        AUDIT_LOGS_TABLE: !Ref AuditLogsTable
+        FRONTEND_URL: !Ref FrontendUrl
+        BACKEND_URL: !Ref BackendUrl
+        JWT_SECRET: !Ref JwtSecret
+        SMTP_HOST: !Ref SmtpHost
+        SMTP_PORT: !Ref SmtpPort
+        SMTP_USER: !Ref SmtpUser
+        SMTP_PASS: !Ref SmtpPass
+        MAIL_FROM: !Ref MailFrom
+        GOOGLE_CLIENT_ID: !Ref GoogleClientId
+        GOOGLE_CLIENT_SECRET: !Ref GoogleClientSecret
+        GITHUB_CLIENT_ID: !Ref GithubClientId
+        GITHUB_CLIENT_SECRET: !Ref GithubClientSecret
 
 Resources:
+  AuditLogsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: auth-audit-logs
+      AttributeDefinitions:
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: timestamp
+          AttributeType: S
+      KeySchema:
+        - AttributeName: userId
+          KeyType: HASH
+        - AttributeName: timestamp
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+
   UsersTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -114,9 +194,11 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: !Ref UsersTable
         - DynamoDBCrudPolicy:
+            TableName: !Ref SessionsTable
+        - DynamoDBCrudPolicy:
             TableName: !Ref AuthSessionsTable
         - DynamoDBCrudPolicy:
-            TableName: !Ref SessionsTable
+            TableName: !Ref AuditLogsTable
       Events:
         ProxyApiRoot:
           Type: Api

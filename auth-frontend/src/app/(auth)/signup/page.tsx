@@ -151,7 +151,8 @@ export default function Signup() {
             <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/60" />
             <input
               type="text"
-              className="input-field pl-9 pr-9"
+              className="input-field"
+              style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
               placeholder="user_name"
               value={username}
               onChange={(e) => setUsername(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, ''))}

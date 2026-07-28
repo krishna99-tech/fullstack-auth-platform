@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const prisma = require('../db');
+const { logSecurityEvent } = require('../utils/logger');
 const { sendVerificationEmail, sendWelcomeEmail, sendPasswordResetEmail, sendSecurityAlertEmail, getLocationFromIP } = require('../utils/email');
 
 exports.signup = async (req, res) => {
@@ -59,6 +60,8 @@ exports.signup = async (req, res) => {
         verificationCodeExpiry,
       }
     });
+
+    await logSecurityEvent(user.id, 'Account created', req.ip || 'Unknown IP', 'Unknown Location', 'info');
 
     // Send verification email
     try {
@@ -176,6 +179,8 @@ exports.login = async (req, res) => {
       }
     });
 
+    await logSecurityEvent(user.id, 'Successful login', ipAddress, 'Unknown Location', 'info');
+
     // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
@@ -279,6 +284,8 @@ exports.verifyMfaLogin = async (req, res) => {
       }
     });
 
+    await logSecurityEvent(user.id, 'Successful MFA login', ipAddress, 'Unknown Location', 'info');
+
     // Send login alert email in the background if user has notifications enabled
     if (user.emailNotifications) {
       const loginTime = new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
@@ -322,6 +329,51 @@ exports.resetPassword = async (req, res) => {
     res.json({ message: 'Password reset successful. You can now log in.' });
   } catch (error) {
     console.error('Reset password error:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+exports.getPublicProfile = async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+
+    const cleanUsername = username.trim().toLowerCase();
+    
+    // Using Prisma to find user by username
+    const user = await prisma.user.findUnique({
+      where: { username: cleanUsername }
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.isProfilePublic === false) {
+      return res.status(403).json({ error: 'Profile is private' });
+    }
+
+    let initial = '?';
+    if (user.name && user.name.length > 0) {
+      initial = user.name.charAt(0).toUpperCase();
+    } else if (user.email && user.email.length > 0) {
+      initial = user.email.charAt(0).toUpperCase();
+    } else if (user.username && user.username.length > 0) {
+      initial = user.username.charAt(0).toUpperCase();
+    }
+
+    // Return only safe public fields
+    res.json({
+      id: user.id,
+      username: user.username,
+      name: user.name || user.username,
+      createdAt: user.createdAt,
+      avatarInitial: initial
+    });
+  } catch (error) {
+    console.error('Get public profile error:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

@@ -1,61 +1,94 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import { ShieldCheck, ArrowUpRight, MonitorSmartphone, KeySquare, Clock } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { 
+  MonitorSmartphone, 
+  ShieldCheck, 
+  KeySquare, 
+  Clock, 
+  ArrowUpRight,
+  ShieldAlert,
+  ChevronRight,
+  Mail,
+  Fingerprint,
+  MoreVertical,
+  Terminal,
+  Activity,
+  Key,
+  Copy,
+  ExternalLink
+} from 'lucide-react';
 
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Button, buttonVariants } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
+interface UserProfile {
+  id: string;
+  email: string;
+  username: string | null;
+  name: string | null;
+  phoneNumber: string | null;
+  createdAt: string;
+  isVerified: boolean;
+  mfaEnabled?: boolean;
+}
 
-export default function Dashboard() {
+interface Session {
+  id: string;
+  device: string;
+  ipAddress: string;
+  lastActive: string;
+  isCurrent: boolean;
+}
+
+export default function DashboardPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
+
   const [loading, setLoading] = useState(true);
-  const [token, setToken] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<any[]>([]);
-  const [profile, setProfile] = useState<{ email: string, isVerified?: boolean } | null>(null);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
 
   useEffect(() => {
-    const urlToken = searchParams.get('token');
-    if (urlToken) {
-      localStorage.setItem('token', urlToken);
-      router.replace('/dashboard');
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
       return;
     }
 
-    const storedToken = localStorage.getItem('token');
-    if (!storedToken) {
-      router.push('/login');
-    } else {
-      setToken(storedToken);
-      
-      // Fetch profile and sessions
-      const headers = { Authorization: `Bearer ${storedToken}` };
-      Promise.all([
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, { headers }),
-        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, { headers })
-      ])
-      .then(async ([profileRes, sessionsRes]) => {
+    const fetchData = async () => {
+      try {
+        const [profileRes, sessionsRes] = await Promise.all([
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          }),
+          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          })
+        ]);
+
         if (profileRes.status === 401 || sessionsRes.status === 401) {
           localStorage.removeItem('token');
           router.push('/login?error=session_expired');
           return;
         }
 
-        if (profileRes.ok) setProfile(await profileRes.json());
+        if (profileRes.ok) {
+          const data = await profileRes.json();
+          setProfile(data.user || data);
+        }
+
         if (sessionsRes.ok) {
           const data = await sessionsRes.json();
-          if (Array.isArray(data)) setSessions(data);
+          setSessions(Array.isArray(data) ? data : (data.sessions || []));
         }
-      })
-      .catch(err => console.error('Failed to fetch dashboard data:', err))
-      .finally(() => setLoading(false));
-    }
-  }, [router, searchParams]);
+      } catch (err) {
+        console.error('Failed to load dashboard data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [router]);
 
   const parseUA = (ua: string) => {
     if (!ua) return 'Unknown Device';
@@ -79,161 +112,231 @@ export default function Dashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center">
-        <div className="w-10 h-10 border-4 border-blue-500/30 border-t-blue-500 rounded-full mb-4" />
-        <p className="text-muted-foreground font-medium">Loading your workspace...</p>
+      <div className="min-h-[60vh] flex flex-col items-center justify-center">
+        <div className="w-5 h-5 border-2 border-zinc-200 dark:border-[#333] border-t-black dark:border-t-white rounded-full animate-spin mb-4" />
       </div>
     );
   }
 
   return (
-    <div className="p-8 md:p-12 max-w-7xl mx-auto w-full relative">
+    <div className="flex flex-col gap-8 w-full pb-12">
       
       {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-10">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-[#333] pb-6">
         <div>
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight capitalize">
-            Welcome back, {profile?.email ? profile.email.split('@')[0] : '...'}
+          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white capitalize">
+            Overview
           </h1>
-          <p className="text-muted-foreground mt-2 text-lg">
-            Here's what's happening with your account today.
+          <p className="text-[#666] mt-1 text-[14px]">
+            Manage your account security and active sessions.
           </p>
         </div>
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full sm:w-auto">
-          <Button variant="outline" className="rounded-xl shadow-sm w-full sm:w-auto">
-            Export Report
-          </Button>
-          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "default" }), "rounded-xl shadow-md bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto text-center justify-center")}>
-            Manage Security
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <Link href="/dashboard/settings" className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0] text-sm font-medium rounded-md transition-colors shadow-sm">
+            Security Settings
           </Link>
         </div>
       </div>
 
-      {/* Clean Grid Section replacing the old layout */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {/* Active Sessions Stat */}
-        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
-          <div className="flex flex-col h-full justify-between">
-            <div className="flex flex-row items-center justify-between pb-2">
-              <span className="text-sm font-medium text-muted-foreground">Active Sessions</span>
-              <div className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <MonitorSmartphone className="w-4 h-4" />
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        
+        {/* Left Column */}
+        <div className="lg:col-span-8 flex flex-col gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            
+            {/* Stat Box 1 */}
+            <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl p-5 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex flex-row items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#111] mb-4">
+                <span className="text-[13px] font-medium text-[#666] tracking-tight">Active Sessions</span>
+                <MonitorSmartphone className="w-4 h-4 text-[#888]" />
               </div>
-            </div>
-            <div>
-              <div className="text-4xl font-extrabold mb-2 text-foreground">{sessions.length || 1}</div>
-              <div className="flex items-center gap-1 text-sm font-medium text-blue-600 dark:text-blue-400">
-                <ArrowUpRight className="w-4 h-4" /> 
-                <span>Securely connected</span>
-              </div>
-            </div>
-          </div>
-        </Card>
-
-        {/* Account Security Stat */}
-        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
-          <div className="flex flex-col h-full justify-between">
-            <div className="flex flex-row items-center justify-between pb-2">
-              <span className="text-sm font-medium text-muted-foreground">Security Status</span>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${profile?.isVerified ? 'bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400' : 'bg-amber-100 dark:bg-amber-900/50 text-amber-600 dark:text-amber-400'}`}>
-                <ShieldCheck className="w-4 h-4" />
-              </div>
-            </div>
-            <div>
-              <div className="text-2xl font-bold mb-3 mt-2 text-foreground">
-                {profile?.isVerified ? 'Protected' : 'Action Required'}
-              </div>
-              <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-                <div className="flex-1 h-1.5 bg-secondary rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
+              <div>
+                <div className="text-4xl font-semibold tracking-tighter mb-2 text-black dark:text-white">{sessions.length || 1}</div>
+                <div className="flex items-center gap-1.5 text-[13px] text-emerald-600 dark:text-emerald-500 font-medium">
+                  <Activity className="w-3.5 h-3.5" /> 
+                  <span>Securely connected</span>
                 </div>
-                <span>{profile?.isVerified ? 'Good' : 'Weak'}</span>
               </div>
             </div>
-          </div>
-        </Card>
 
-        {/* Recent Activity Stat */}
-        <Card className="shadow-sm rounded-2xl border-border/50 p-6">
-          <div className="flex flex-col h-full justify-between">
-            <div className="flex flex-row items-center justify-between pb-2">
-              <span className="text-sm font-medium text-muted-foreground">Authentication Events</span>
-              <div className="w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center text-purple-600 dark:text-purple-400">
-                <KeySquare className="w-4 h-4" />
+            {/* Stat Box 2 */}
+            <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl p-5 shadow-sm transition-shadow hover:shadow-md">
+              <div className="flex flex-row items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#111] mb-4">
+                <span className="text-[13px] font-medium text-[#666] tracking-tight">Security Status</span>
+                <ShieldCheck className={`w-4 h-4 ${profile?.isVerified ? 'text-emerald-500' : 'text-amber-500'}`} />
               </div>
-            </div>
-            <div>
-              <div className="text-4xl font-extrabold mb-2 text-foreground">12</div>
-              <div className="flex items-center gap-1 text-sm font-medium text-muted-foreground">
-                <Clock className="w-4 h-4" /> 
-                <span>Logins in last 30 days</span>
+              <div>
+                <div className="text-3xl font-semibold tracking-tighter mb-2 text-black dark:text-white">
+                  {profile?.isVerified ? 'Protected' : 'Action Needed'}
+                </div>
+                <div className="flex items-center gap-2 text-[13px] text-[#666] mt-1">
+                  <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-[#111] rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
+                  </div>
+                  <span className="font-medium">{profile?.isVerified ? 'Good' : 'Weak'}</span>
+                </div>
               </div>
             </div>
           </div>
-        </Card>
-      </div>
 
-      {/* Main Content Area (Recent Activity Table) */}
-      <Card className="shadow-sm rounded-2xl border-border/50 overflow-hidden">
-        <div className="p-6 md:p-8 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-xl font-bold text-foreground">Active Sessions</h2>
-            <p className="text-sm text-muted-foreground mt-1">Review where your account is currently logged in.</p>
+          {/* Security Checklist */}
+          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm">
+            <div className="p-5 border-b border-zinc-200 dark:border-[#333] flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold text-black dark:text-white">Security Checklist</h3>
+                <p className="text-[13px] text-[#666] mt-0.5">Complete these steps to maximize your account security.</p>
+              </div>
+              <Terminal className="w-4 h-4 text-[#888]" />
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#111] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 border border-zinc-200 dark:border-[#333] rounded-md bg-white dark:bg-[#000]">
+                    <Mail className="w-4 h-4 text-black dark:text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[14px] text-black dark:text-white">Verify Email Address</h4>
+                    <p className="text-[13px] text-[#666] mt-0.5">Ensure you can recover your account.</p>
+                  </div>
+                </div>
+                {profile?.isVerified ? (
+                  <span className="text-[12px] px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full font-medium">Completed</span>
+                ) : (
+                  <Link href="/dashboard/settings" className="text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors">Verify Now</Link>
+                )}
+              </div>
+              
+              <div className="flex items-center justify-between p-5 hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 border border-zinc-200 dark:border-[#333] rounded-md bg-white dark:bg-[#000]">
+                    <Fingerprint className="w-4 h-4 text-black dark:text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[14px] text-black dark:text-white">Enable Two-Factor Auth</h4>
+                    <p className="text-[13px] text-[#666] mt-0.5">Protect against unauthorized access.</p>
+                  </div>
+                </div>
+                {profile?.mfaEnabled ? (
+                  <span className="text-[12px] px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900 rounded-full font-medium">Completed</span>
+                ) : (
+                  <Link href="/dashboard/settings" className="text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors">Enable MFA</Link>
+                )}
+              </div>
+            </div>
           </div>
-          <Link href="/dashboard/settings" className={cn(buttonVariants({ variant: "secondary" }), "rounded-xl font-bold border-0 w-full sm:w-auto text-center justify-center")}>
-            Manage
-          </Link>
+
+          {/* API Keys */}
+          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm">
+            <div className="p-5 border-b border-zinc-200 dark:border-[#333] flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold text-black dark:text-white">API Keys</h3>
+                <p className="text-[13px] text-[#666] mt-0.5">Manage your secret keys for external integrations.</p>
+              </div>
+              <button className="text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors shadow-sm">
+                Generate New Key
+              </button>
+            </div>
+            <div className="flex flex-col">
+              <div className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#111] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 border border-zinc-200 dark:border-[#333] rounded-md bg-white dark:bg-[#000]">
+                    <Key className="w-4 h-4 text-black dark:text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[14px] text-black dark:text-white">Production Key</h4>
+                    <p className="text-[12px] text-[#888] font-mono mt-0.5 tracking-wider">pk_live_********************</p>
+                  </div>
+                </div>
+                <button className="text-[13px] font-medium text-[#666] hover:text-black dark:hover:text-white border border-transparent hover:border-zinc-200 dark:hover:border-[#333] px-2 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
+                  <Copy className="w-3.5 h-3.5" /> Copy
+                </button>
+              </div>
+              <div className="flex items-center justify-between p-5 hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
+                <div className="flex items-center gap-4">
+                  <div className="p-2 border border-zinc-200 dark:border-[#333] rounded-md bg-white dark:bg-[#000]">
+                    <Key className="w-4 h-4 text-black dark:text-white" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[14px] text-black dark:text-white">Test Key</h4>
+                    <p className="text-[12px] text-[#888] font-mono mt-0.5 tracking-wider">pk_test_********************</p>
+                  </div>
+                </div>
+                <button className="text-[13px] font-medium text-[#666] hover:text-black dark:hover:text-white border border-transparent hover:border-zinc-200 dark:hover:border-[#333] px-2 py-1.5 rounded-md transition-colors flex items-center gap-1.5">
+                  <Copy className="w-3.5 h-3.5" /> Copy
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
-        <div className="overflow-x-auto w-full">
-          <Table>
-            <TableHeader className="bg-muted/30">
-              <TableRow className="border-border hover:bg-transparent">
-                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Device & Browser</TableHead>
-                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">IP Address</TableHead>
-                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-muted-foreground">Last Active</TableHead>
-                <TableHead className="px-6 md:px-8 py-4 font-semibold uppercase tracking-wider text-xs text-right text-muted-foreground">Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {sessions.map((session) => (
-                <TableRow key={session.id} className="border-border">
-                  <TableCell className="px-6 md:px-8 py-5">
+
+        {/* Right Column */}
+        <div className="lg:col-span-4 flex flex-col gap-6">
+          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm flex flex-col h-full">
+            <div className="p-5 border-b border-zinc-200 dark:border-[#333] flex items-center justify-between">
+              <div>
+                <h3 className="text-[15px] font-semibold text-black dark:text-white">Recent Sessions</h3>
+                <p className="text-[13px] text-[#666] mt-0.5">Where you are logged in.</p>
+              </div>
+              <Link href="/dashboard/settings" className="p-1.5 text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors">
+                <ChevronRight className="w-4 h-4" />
+              </Link>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <div className="divide-y divide-zinc-100 dark:divide-[#111]">
+                {sessions.slice(0, 5).map((session) => (
+                  <div key={session.id} className="p-4 flex items-center justify-between hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
                     <div className="flex items-center gap-3">
-                      <div className="p-2 bg-muted/50 rounded-lg text-muted-foreground">
-                        <MonitorSmartphone className="w-5 h-5" />
+                      <div className="w-8 h-8 rounded border border-zinc-200 dark:border-[#333] flex items-center justify-center bg-white dark:bg-[#000] text-[#666]">
+                        <MonitorSmartphone className="w-4 h-4" />
                       </div>
-                      <div className="flex flex-col text-foreground">
-                        <span className="font-bold">{parseUA(session.device)}</span>
-                        {session.isCurrent && (
-                          <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">Current Session</span>
-                        )}
+                      <div className="flex flex-col">
+                        <span className="font-semibold text-[13px] text-black dark:text-white">{parseUA(session.device)}</span>
+                        <span className="text-[12px] text-[#888]">{session.ipAddress}</span>
                       </div>
                     </div>
-                  </TableCell>
-                  <TableCell className="px-6 md:px-8 py-5 font-medium text-foreground">{session.ipAddress || 'Unknown IP'}</TableCell>
-                  <TableCell className="px-6 md:px-8 py-5 text-muted-foreground font-medium">
-                    {new Date(session.lastActive).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                  </TableCell>
-                  <TableCell className="px-6 md:px-8 py-5 text-right">
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20 font-bold gap-1.5 py-1 px-3">
-                      <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                      Active
-                    </Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
-              {sessions.length === 0 && (
-                <TableRow className="border-border hover:bg-transparent">
-                  <TableCell colSpan={4} className="px-6 py-12 text-center text-muted-foreground font-medium">
-                    No session data available.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                    <div className="flex items-center gap-2">
+                      {session.isCurrent && (
+                        <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                {sessions.length === 0 && (
+                  <div className="p-8 text-center text-[#666] text-[13px]">
+                    No active sessions found.
+                  </div>
+                )}
+              </div>
+            </div>
+            {sessions.length > 5 && (
+              <div className="p-3 border-t border-zinc-100 dark:border-[#111] text-center">
+                 <Link href="/dashboard/settings" className="text-[13px] text-[#666] hover:text-black dark:hover:text-white transition-colors">View all sessions</Link>
+              </div>
+            )}
+          </div>
+
+          {/* Support Widget */}
+          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm p-5 relative overflow-hidden">
+            {/* Subtle background decoration */}
+            <div className="absolute -right-4 -top-4 w-24 h-24 bg-gradient-to-br from-zinc-100 to-transparent dark:from-[#111] rounded-full opacity-50 blur-xl"></div>
+            
+            <h3 className="text-[15px] font-semibold text-black dark:text-white mb-1.5 relative z-10">Need Help?</h3>
+            <p className="text-[13px] text-[#666] mb-5 relative z-10">Contact our support team or explore the documentation if you encounter any security issues.</p>
+            
+            <div className="flex flex-col gap-2 relative z-10">
+              <a href="mailto:support@acme.com" className="w-full text-center text-[13px] font-medium text-white bg-black dark:text-black dark:bg-white px-3 py-2 rounded-md hover:bg-[#333] dark:hover:bg-[#e0e0e0] transition-colors shadow-sm">
+                Contact Support
+              </a>
+              <a href="#" className="w-full flex items-center justify-center gap-1.5 text-center text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] px-3 py-2 rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors shadow-sm">
+                View Documentation <ExternalLink className="w-3.5 h-3.5 text-[#888]" />
+              </a>
+            </div>
+          </div>
+
         </div>
-      </Card>
-      
+
+      </div>
     </div>
   );
 }

@@ -26,6 +26,9 @@ router.post('/login', authController.login);
 router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
+// Public User Profile Route
+router.get('/user/:username', authController.getPublicProfile);
+
 const authMiddleware = require('../middleware/authMiddleware');
 const settingsController = require('../controllers/settingsController');
 
@@ -35,6 +38,7 @@ router.put('/profile', authMiddleware, settingsController.updateProfile);
 router.patch('/preferences', authMiddleware, settingsController.updatePreferences);
 router.post('/change-password', authMiddleware, settingsController.changePassword);
 router.get('/sessions', authMiddleware, settingsController.getSessions);
+router.get('/analytics', authMiddleware, settingsController.getAnalytics);
 router.delete('/sessions/others', authMiddleware, settingsController.revokeOtherSessions);
 router.delete('/sessions/:id', authMiddleware, settingsController.revokeSession);
 router.delete('/providers/:provider', authMiddleware, settingsController.disconnectProvider);
