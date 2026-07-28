@@ -35,16 +35,16 @@ export default function Home() {
       />
       
       {/* Navbar */}
-      <header className="relative z-10 flex items-center justify-between p-6 max-w-7xl w-full mx-auto">
-        <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
+      <header className="relative z-10 flex items-center justify-between p-4 sm:p-6 max-w-7xl w-full mx-auto gap-2">
+        <div className="text-xl sm:text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight whitespace-nowrap">
           Platform
         </div>
-        <nav className="flex items-center gap-4">
+        <nav className="flex items-center gap-2 sm:gap-4">
           <ThemeToggle />
-          <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-4 py-2 font-medium transition-colors">
+          <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 sm:px-4 py-2 font-medium transition-colors text-sm sm:text-base whitespace-nowrap">
             Log in
           </Link>
-          <Link href="/signup" className="btn-primary py-2 px-6 rounded-full">
+          <Link href="/signup" className="btn-primary py-2 px-4 sm:px-6 rounded-full text-sm sm:text-base whitespace-nowrap">
             Get Started
           </Link>
         </nav>

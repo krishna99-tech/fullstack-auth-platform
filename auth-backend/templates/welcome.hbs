@@ -5,73 +5,113 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Welcome to {{appName}}</title>
 </head>
-<body style="margin:0;padding:0;background-color:#f4f5f7;font-family:'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f4f5f7;padding:32px 0;">
+<body style="margin:0;padding:0;background-color:#f6f7f9;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color:#f6f7f9;padding:48px 0;">
     <tr>
       <td align="center">
-        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:8px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,0.08);">
+        <!-- Outer container with subtle premium shadow -->
+        <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="background-color:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 8px 40px rgba(0,0,0,0.04),0 2px 8px rgba(0,0,0,0.02);">
 
-          <!-- Header -->
+          <!-- Header - Minimalist, premium -->
           <tr>
-            <td style="background-color:#4f46e5;padding:32px 40px;text-align:center;">
+            <td style="background:#ffffff;padding:36px 48px 24px;text-align:center;border-bottom:1px solid #f0f1f3;">
               {{#if logoUrl}}
-              <img src="{{logoUrl}}" alt="{{appName}}" width="40" style="display:block;margin:0 auto 12px;">
+              <img src="{{logoUrl}}" alt="{{appName}}" width="44" style="display:block;margin:0 auto 10px;border-radius:12px;">
               {{/if}}
-              <span style="color:#ffffff;font-size:20px;font-weight:600;">{{appName}}</span>
+              <span style="color:#1a1a1a;font-size:18px;font-weight:600;letter-spacing:-0.2px;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;">{{appName}}</span>
+              <div style="margin-top:10px;height:3px;width:32px;background:linear-gradient(90deg,#4f46e5,#7c3aed);border-radius:4px;margin-left:auto;margin-right:auto;"></div>
             </td>
           </tr>
 
-          <!-- Body -->
+          <!-- Body - Premium, spacious, refined -->
           <tr>
-            <td style="padding:40px;">
-              <h1 style="margin:0 0 16px;font-size:22px;color:#111827;">Welcome, {{userName}}! 👋</h1>
-              <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#374151;">
-                Thanks for creating an account with {{appName}}. We're excited to have you on board.
-                Here's a quick way to get started:
+            <td style="padding:44px 48px 36px;">
+
+              <!-- Premium greeting -->
+              <div style="margin-bottom:28px;">
+                <span style="font-size:38px;line-height:1.2;display:block;margin-bottom:6px;">👋</span>
+                <h1 style="margin:0;font-size:28px;color:#111827;font-weight:600;letter-spacing:-0.5px;font-family:'SF Pro Display',-apple-system,BlinkMacSystemFont,sans-serif;">
+                  Welcome, {{userName}}
+                </h1>
+                <p style="margin:6px 0 0;font-size:17px;color:#6b7280;font-weight:400;letter-spacing:-0.2px;">
+                  You're now part of the {{appName}} community
+                </p>
+              </div>
+
+              <!-- Main message -->
+              <p style="margin:0 0 28px;font-size:16px;line-height:1.7;color:#374151;">
+                Thanks for creating your account. We're thrilled to have you on board.
               </p>
 
+              <!-- Verification - Premium card design -->
               {{#if verificationLink}}
-              <p style="margin:0 0 24px;font-size:15px;line-height:1.6;color:#374151;">
-                Please confirm your email address to activate your account.
-              </p>
-              <table role="presentation" cellpadding="0" cellspacing="0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 32px;border:1px solid #e5e7eb;background-color:#fafbfc;border-radius:12px;">
                 <tr>
-                  <td align="center" style="border-radius:6px;background-color:#4f46e5;">
-                    <a href="{{verificationLink}}" style="display:inline-block;padding:12px 28px;font-size:15px;font-weight:600;color:#ffffff;text-decoration:none;border-radius:6px;">
-                      Verify My Email
-                    </a>
+                  <td style="padding:24px 28px 20px;">
+                    <div style="display:flex;align-items:flex-start;gap:14px;margin-bottom:18px;">
+                      <div style="background:#eef2ff;border-radius:8px;padding:8px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                        <span style="font-size:20px;">✉️</span>
+                      </div>
+                      <div>
+                        <p style="margin:0 0 4px;font-size:15px;font-weight:600;color:#111827;letter-spacing:-0.2px;">Verify your email</p>
+                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.5;">
+                          Confirm your email address to unlock all features
+                        </p>
+                      </div>
+                    </div>
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                      <tr>
+                        <td align="center" style="padding-top:4px;">
+                          <a href="{{verificationLink}}" style="display:inline-block;width:100%;padding:14px 0;font-size:15px;font-weight:500;color:#ffffff;text-decoration:none;border-radius:8px;background:#4f46e5;text-align:center;border:1px solid #4f46e5;letter-spacing:-0.1px;box-shadow:0 2px 8px rgba(79,70,229,0.15);transition:all 0.2s;">
+                            Verify Email Address →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
               </table>
               {{/if}}
 
-              {{#if features}}
-              <div style="margin-top:32px;">
-                <p style="margin:0 0 12px;font-size:14px;font-weight:600;color:#111827;">What you can do next:</p>
-                <ul style="margin:0;padding-left:20px;color:#374151;font-size:14px;line-height:1.8;">
-                  {{#each features}}
-                  <li>{{this}}</li>
-                  {{/each}}
-                </ul>
-              </div>
-              {{/if}}
+              <!-- Premium divider -->
+              <div style="margin:0 0 28px;height:1px;background:linear-gradient(90deg,transparent,#e5e7eb,transparent);"></div>
 
-              <p style="margin:32px 0 0;font-size:14px;line-height:1.6;color:#6b7280;">
-                If you have any questions, just reply to this email or reach us at
-                <a href="mailto:{{supportEmail}}" style="color:#4f46e5;text-decoration:none;">{{supportEmail}}</a>.
-              </p>
+              <!-- Simple, clean support section -->
+              <div style="margin:0 0 8px;">
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                  <tr>
+                    <td style="padding:0 0 8px 0;width:100%;vertical-align:top;">
+                      <div style="background:#fafbfc;border-radius:10px;padding:16px 20px;border:1px solid #f0f1f3;">
+                        <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.6;text-align:center;">
+                          <span style="font-weight:500;color:#111827;">Questions?</span> 
+                          We're here to help. Reach us at 
+                          <a href="mailto:{{supportEmail}}" style="color:#4f46e5;text-decoration:none;font-weight:500;">{{supportEmail}}</a>
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </div>
+
             </td>
           </tr>
 
-          <!-- Footer -->
+          <!-- Footer - Ultra premium -->
           <tr>
-            <td style="background-color:#f9fafb;padding:24px 40px;text-align:center;">
-              <p style="margin:0;font-size:12px;color:#9ca3af;">
+            <td style="background:#fafbfc;padding:28px 48px 24px;text-align:center;border-top:1px solid #f0f1f3;">
+              <p style="margin:0 0 6px;font-size:13px;color:#9ca3af;letter-spacing:0.2px;">
                 &copy; {{year}} {{appName}}. All rights reserved.
               </p>
+              <p style="margin:0 0 6px;font-size:13px;color:#9ca3af;">
+                <a href="#" style="color:#9ca3af;text-decoration:none;transition:color 0.2s;">Privacy Policy</a>
+                <span style="margin:0 8px;color:#d1d5db;">·</span>
+                <a href="#" style="color:#9ca3af;text-decoration:none;transition:color 0.2s;">Terms of Service</a>
+                <span style="margin:0 8px;color:#d1d5db;">·</span>
+                <a href="#" style="color:#9ca3af;text-decoration:none;transition:color 0.2s;">Security</a>
+              </p>
               {{#if unsubscribeLink}}
-              <p style="margin:8px 0 0;font-size:12px;">
-                <a href="{{unsubscribeLink}}" style="color:#9ca3af;text-decoration:underline;">Unsubscribe</a>
+              <p style="margin:10px 0 0;font-size:13px;color:#9ca3af;">
+                <a href="{{unsubscribeLink}}" style="color:#9ca3af;text-decoration:none;border-bottom:1px dotted #d1d5db;transition:border-color 0.2s;">Unsubscribe from updates</a>
               </p>
               {{/if}}
             </td>
