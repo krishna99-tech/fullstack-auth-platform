@@ -16,6 +16,12 @@ interface UserProfile {
   mfaEnabled?: boolean;
   emailNotifications?: boolean;
   isProfilePublic?: boolean;
+  bio?: string;
+  location?: string;
+  website?: string;
+  theme?: string;
+  socialLinks?: { github?: string, twitter?: string, linkedin?: string };
+  customLinks?: { title: string, url: string }[];
 }
 
 interface Session {
@@ -39,11 +45,24 @@ export default function SettingsPage() {
   const [editName, setEditName] = useState('');
   const [editUsername, setEditUsername] = useState('');
   const [editEmail, setEditEmail] = useState('');
+  
+  const [editBio, setEditBio] = useState('');
+  const [editLocation, setEditLocation] = useState('');
+  const [editWebsite, setEditWebsite] = useState('');
+  const [editTheme, setEditTheme] = useState('default');
+  const [editSocials, setEditSocials] = useState({ github: '', twitter: '', linkedin: '' });
+  const [customLinks, setCustomLinks] = useState<{title: string, url: string}[]>([]);
 
   // Loading States
   const [isUpdatingName, setIsUpdatingName] = useState(false);
   const [isUpdatingUsername, setIsUpdatingUsername] = useState(false);
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
+  
+  const [isUpdatingBio, setIsUpdatingBio] = useState(false);
+  const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
+  const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
+  const [isUpdatingSocials, setIsUpdatingSocials] = useState(false);
+  const [isUpdatingCustomLinks, setIsUpdatingCustomLinks] = useState(false);
   
   const [isResending, setIsResending] = useState(false);
   
@@ -105,6 +124,18 @@ export default function SettingsPage() {
           setEditName(user.name || '');
           setEditUsername(user.username || '');
           setEditEmail(user.email || '');
+          setEditBio(user.bio || '');
+          setEditLocation(user.location || '');
+          setEditWebsite(user.website || '');
+          setEditTheme(user.theme || 'default');
+          if (user.socialLinks) {
+            setEditSocials({
+              github: user.socialLinks.github || '',
+              twitter: user.socialLinks.twitter || '',
+              linkedin: user.socialLinks.linkedin || ''
+            });
+          }
+          setCustomLinks(user.customLinks || []);
         }
 
         if (sessionsRes.ok) {
@@ -152,7 +183,7 @@ export default function SettingsPage() {
     }
   };
 
-  const handleUpdateField = async (field: string, value: string, setLoadingState: (state: boolean) => void) => {
+  const handleUpdateField = async (field: string, value: any, setLoadingState: (state: boolean) => void) => {
     setLoadingState(true);
     try {
       const token = localStorage.getItem('token');
@@ -567,6 +598,192 @@ export default function SettingsPage() {
                   </div>
                 )}
               </div>
+
+              <SettingCard
+                title="Bio"
+                description="A short description about yourself."
+                footerText="Markdown is not supported."
+                onSave={() => handleUpdateField('bio', editBio, setIsUpdatingBio)}
+                isSaving={isUpdatingBio}
+                messageKey="bio"
+              >
+                <textarea 
+                  className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm min-h-[100px] resize-y"
+                  value={editBio} 
+                  onChange={e => setEditBio(e.target.value)} 
+                  maxLength={160}
+                  placeholder="🚀 Full-stack developer passionate about building tools..."
+                />
+              </SettingCard>
+
+              <SettingCard
+                title="Location & Website"
+                description="Where are you based, and where can people find more of your work?"
+                footerText="These will be displayed on your public profile."
+                onSave={() => {
+                  setIsUpdatingLocation(true);
+                  // Chain the updates or just send them together if we modify handleUpdateField to support multiple
+                  // Since we didn't, we will just send two sequential updates for now.
+                  handleUpdateField('location', editLocation, setIsUpdatingLocation).then(() => {
+                    handleUpdateField('website', editWebsite, () => {});
+                  });
+                }}
+                isSaving={isUpdatingLocation}
+                messageKey="location"
+              >
+                <div className="flex flex-col gap-4 max-w-[360px]">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-black dark:text-white">Location</label>
+                    <input 
+                      type="text"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editLocation} 
+                      onChange={e => setEditLocation(e.target.value)} 
+                      placeholder="San Francisco, CA"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-black dark:text-white">Website</label>
+                    <input 
+                      type="url"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editWebsite} 
+                      onChange={e => setEditWebsite(e.target.value)} 
+                      placeholder="https://myportfolio.dev"
+                    />
+                  </div>
+                </div>
+              </SettingCard>
+
+              <SettingCard
+                title="Profile Theme"
+                description="Choose the primary color gradient for your public profile banner."
+                footerText="Pick a color that fits your brand."
+                onSave={() => handleUpdateField('theme', editTheme, setIsUpdatingTheme)}
+                isSaving={isUpdatingTheme}
+                messageKey="theme"
+              >
+                <div className="flex gap-4">
+                  {[
+                    { id: 'default', bg: 'bg-zinc-500' },
+                    { id: 'emerald', bg: 'bg-emerald-500' },
+                    { id: 'blue', bg: 'bg-blue-500' },
+                    { id: 'purple', bg: 'bg-purple-500' },
+                    { id: 'rose', bg: 'bg-rose-500' }
+                  ].map(t => (
+                    <button
+                      key={t.id}
+                      onClick={() => setEditTheme(t.id)}
+                      className={cn(
+                        "w-8 h-8 rounded-full flex items-center justify-center transition-all",
+                        t.bg,
+                        editTheme === t.id ? "ring-2 ring-offset-2 ring-black dark:ring-white dark:ring-offset-[#000] scale-110" : "opacity-70 hover:opacity-100"
+                      )}
+                    />
+                  ))}
+                </div>
+              </SettingCard>
+
+              <SettingCard
+                title="Social Links"
+                description="Connect your social media accounts."
+                footerText="Links will appear as icons on your profile."
+                onSave={() => handleUpdateField('socialLinks', editSocials, setIsUpdatingSocials)}
+                isSaving={isUpdatingSocials}
+                messageKey="socialLinks"
+              >
+                <div className="flex flex-col gap-4 max-w-[360px]">
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-black dark:text-white">GitHub Username</label>
+                    <input 
+                      type="text"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editSocials.github} 
+                      onChange={e => setEditSocials({...editSocials, github: e.target.value})} 
+                      placeholder="octocat"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-black dark:text-white">Twitter / X Username</label>
+                    <input 
+                      type="text"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editSocials.twitter} 
+                      onChange={e => setEditSocials({...editSocials, twitter: e.target.value})} 
+                      placeholder="jack"
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label className="text-[13px] font-medium text-black dark:text-white">LinkedIn Profile URL</label>
+                    <input 
+                      type="url"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editSocials.linkedin} 
+                      onChange={e => setEditSocials({...editSocials, linkedin: e.target.value})} 
+                      placeholder="https://linkedin.com/in/username"
+                    />
+                  </div>
+                </div>
+              </SettingCard>
+
+              <SettingCard
+                title="Custom Links (Link in Bio)"
+                description="Add custom links to highlight your portfolio, videos, or projects."
+                footerText="Add up to 5 custom links."
+                onSave={() => handleUpdateField('customLinks', customLinks, setIsUpdatingCustomLinks)}
+                isSaving={isUpdatingCustomLinks}
+                messageKey="customLinks"
+              >
+                <div className="space-y-4">
+                  {customLinks.map((link, idx) => (
+                    <div key={idx} className="flex flex-col sm:flex-row gap-3 p-4 bg-zinc-50 dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-lg">
+                      <div className="flex-1 space-y-3">
+                        <input 
+                          type="text"
+                          className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                          value={link.title} 
+                          onChange={e => {
+                            const newLinks = [...customLinks];
+                            newLinks[idx].title = e.target.value;
+                            setCustomLinks(newLinks);
+                          }} 
+                          placeholder="Link Title (e.g. My Latest Video)"
+                        />
+                        <input 
+                          type="url"
+                          className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                          value={link.url} 
+                          onChange={e => {
+                            const newLinks = [...customLinks];
+                            newLinks[idx].url = e.target.value;
+                            setCustomLinks(newLinks);
+                          }} 
+                          placeholder="https://youtube.com/..."
+                        />
+                      </div>
+                      <button 
+                        onClick={() => {
+                          const newLinks = [...customLinks];
+                          newLinks.splice(idx, 1);
+                          setCustomLinks(newLinks);
+                        }}
+                        className="text-rose-600 dark:text-rose-500 text-[13px] font-medium self-end sm:self-center h-fit px-3 py-2 hover:bg-rose-50 dark:hover:bg-rose-950/20 rounded-md transition-colors"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {customLinks.length < 5 && (
+                    <button 
+                      onClick={() => setCustomLinks([...customLinks, { title: '', url: '' }])}
+                      className="text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] px-4 py-2 rounded-md hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+                    >
+                      + Add Link
+                    </button>
+                  )}
+                </div>
+              </SettingCard>
 
               <SettingCard
                 title="Email Address"

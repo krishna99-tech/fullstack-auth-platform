@@ -409,7 +409,13 @@ exports.getPublicProfile = async (req, res) => {
       username: user.username,
       name: user.name || user.username,
       createdAt: user.createdAt,
-      avatarInitial: initial
+      avatarInitial: initial,
+      bio: user.bio,
+      location: user.location,
+      website: user.website,
+      socialLinks: user.socialLinks,
+      customLinks: user.customLinks,
+      theme: user.theme
     });
   } catch (error) {
     console.error('Get public profile error:', error);

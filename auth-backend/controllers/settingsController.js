@@ -21,6 +21,12 @@ exports.getProfile = async (req, res) => {
         emailNotifications: true,
         accentColor: true,
         isProfilePublic: true,
+        bio: true,
+        location: true,
+        website: true,
+        socialLinks: true,
+        customLinks: true,
+        theme: true,
       }
     });
 
@@ -44,6 +50,12 @@ exports.getProfile = async (req, res) => {
       emailNotifications: user.emailNotifications,
       accentColor: user.accentColor,
       isProfilePublic: user.isProfilePublic !== false, // Default to true if undefined
+      bio: user.bio || '',
+      location: user.location || '',
+      website: user.website || '',
+      socialLinks: user.socialLinks || { github: '', twitter: '', linkedin: '' },
+      customLinks: user.customLinks || [],
+      theme: user.theme || 'default',
     };
 
     res.json(profile);
@@ -55,7 +67,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, email, username } = req.body;
+    const { name, phoneNumber, email, username, bio, location, website, socialLinks, customLinks, theme } = req.body;
     
     const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
     if (!user) {
@@ -65,6 +77,12 @@ exports.updateProfile = async (req, res) => {
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (phoneNumber !== undefined) updates.phoneNumber = phoneNumber;
+    if (bio !== undefined) updates.bio = bio;
+    if (location !== undefined) updates.location = location;
+    if (website !== undefined) updates.website = website;
+    if (socialLinks !== undefined) updates.socialLinks = socialLinks;
+    if (customLinks !== undefined) updates.customLinks = customLinks;
+    if (theme !== undefined) updates.theme = theme;
 
     // Handle username change
     if (username !== undefined && username !== user.username) {
@@ -116,6 +134,12 @@ exports.updateProfile = async (req, res) => {
         phoneNumber: true,
         isVerified: true,
         createdAt: true,
+        bio: true,
+        location: true,
+        website: true,
+        socialLinks: true,
+        customLinks: true,
+        theme: true,
       }
     });
 
