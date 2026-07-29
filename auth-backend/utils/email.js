@@ -13,7 +13,7 @@ exports.getLocationFromIP = (ip) => {
     if (!ip) return resolve('Unknown Location');
 
     // Strip IPv4-mapped IPv6 prefix (e.g. ::ffff:192.168.1.1 → 192.168.1.1)
-    const cleanIp = ip.replace(/^::ffff:/, '').trim();
+    let cleanIp = ip.replace(/^::ffff:/, '').trim();
 
     // Loopback / private addresses can't be geolocated
     const isPrivate =
@@ -163,7 +163,7 @@ exports.sendSecurityAlertEmail = async (email, { loginTime, location, ipAddress,
       eventType: 'Sign-in',
       timestamp: loginTime || 'Unknown',
       ipAddress: ipAddress || 'Unknown',
-      location: location || 'Unknown',
+      loginLocation: location || 'Unknown',
       deviceInfo: via2FA ? '2FA Used' : 'Standard Login',
       secureAccountLink: `${process.env.FRONTEND_URL}/dashboard/settings`,
       year: new Date().getFullYear(),

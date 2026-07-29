@@ -32,6 +32,58 @@ interface Session {
   isCurrent: boolean;
 }
 
+const SettingCard = ({ 
+  title, 
+  description, 
+  children, 
+  footerText, 
+  onSave, 
+  isSaving, 
+  messageKey,
+  messages,
+  deleteConfirm,
+  profileEmail,
+  isDestructive = false
+}: any) => {
+  const msg = messages ? messages[messageKey] : null;
+  return (
+    <div className={cn("border bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden", isDestructive ? "border-red-500/30" : "border-zinc-200 dark:border-[#333]")}>
+      <div className="p-6">
+        <h3 className="text-[16px] font-semibold text-black dark:text-white">{title}</h3>
+        <p className="text-[14px] text-[#666] mt-1 mb-6">{description}</p>
+        {children}
+      </div>
+      <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-3 border-t", 
+        isDestructive ? "bg-red-50/50 dark:bg-red-950/10 border-red-500/20" : "bg-zinc-50/50 dark:bg-[#0a0a0a] border-zinc-200 dark:border-[#333]"
+      )}>
+        <div className="text-[13px] font-medium">
+          {msg ? (
+            <span className={msg.type === 'error' ? 'text-rose-600 dark:text-rose-500' : 'text-emerald-600 dark:text-emerald-500'}>
+              {msg.text}
+            </span>
+          ) : (
+            <span className={isDestructive ? "text-red-600 dark:text-red-500" : "text-[#888]"}>{footerText}</span>
+          )}
+        </div>
+        {onSave && (
+          <button 
+            onClick={onSave} 
+            disabled={isSaving || (isDestructive && deleteConfirm !== profileEmail)} 
+            className={cn("mt-4 sm:mt-0 px-4 py-2 text-[13px] font-medium rounded-md transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center min-w-[80px]", 
+              isDestructive 
+                ? "bg-red-600 hover:bg-red-700 text-white" 
+                : "bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0]"
+            )}
+          >
+            {isSaving ? <RefreshCcw className="w-3.5 h-3.5 mr-2 animate-spin" /> : null}
+            Save
+          </button>
+        )}
+      </div>
+    </div>
+  );
+};
+
 export default function SettingsPage() {
   const router = useRouter();
 
@@ -428,54 +480,7 @@ export default function SettingsPage() {
     );
   }
 
-  const SettingCard = ({ 
-    title, 
-    description, 
-    children, 
-    footerText, 
-    onSave, 
-    isSaving, 
-    messageKey,
-    isDestructive = false
-  }: any) => {
-    const msg = messages[messageKey];
-    return (
-      <div className={cn("border bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden", isDestructive ? "border-red-500/30" : "border-zinc-200 dark:border-[#333]")}>
-        <div className="p-6">
-          <h3 className="text-[16px] font-semibold text-black dark:text-white">{title}</h3>
-          <p className="text-[14px] text-[#666] mt-1 mb-6">{description}</p>
-          {children}
-        </div>
-        <div className={cn("flex flex-col sm:flex-row items-start sm:items-center justify-between px-6 py-3 border-t", 
-          isDestructive ? "bg-red-50/50 dark:bg-red-950/10 border-red-500/20" : "bg-zinc-50/50 dark:bg-[#0a0a0a] border-zinc-200 dark:border-[#333]"
-        )}>
-          <div className="text-[13px] font-medium">
-            {msg ? (
-              <span className={msg.type === 'error' ? 'text-rose-600 dark:text-rose-500' : 'text-emerald-600 dark:text-emerald-500'}>
-                {msg.text}
-              </span>
-            ) : (
-              <span className={isDestructive ? "text-red-600 dark:text-red-500" : "text-[#888]"}>{footerText}</span>
-            )}
-          </div>
-          {onSave && (
-            <button 
-              onClick={onSave} 
-              disabled={isSaving || (isDestructive && deleteConfirm !== profile?.email)} 
-              className={cn("mt-4 sm:mt-0 px-4 py-2 text-[13px] font-medium rounded-md transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center min-w-[80px]", 
-                isDestructive 
-                  ? "bg-red-600 hover:bg-red-700 text-white" 
-                  : "bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0]"
-              )}
-            >
-              {isSaving ? <RefreshCcw className="w-3.5 h-3.5 mr-2 animate-spin" /> : null}
-              Save
-            </button>
-          )}
-        </div>
-      </div>
-    );
-  };
+  // SettingCard moved outside to prevent unmounting
 
   const tabs = [
     { id: 'general', label: 'General' },
@@ -518,6 +523,9 @@ export default function SettingsPage() {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Avatar & User ID"
                 description="Your unique identifier on the platform."
                 footerText="An avatar is generated based on your name."
@@ -534,6 +542,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Display Name"
                 description="Please enter your full name, or a display name you are comfortable with."
                 footerText="Please use 32 characters at maximum."
@@ -551,6 +562,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Username"
                 description="Your URL namespace within the application."
                 footerText="Must be unique across the platform."
@@ -600,6 +614,9 @@ export default function SettingsPage() {
               </div>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Bio"
                 description="A short description about yourself."
                 footerText="Markdown is not supported."
@@ -617,6 +634,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Location & Website"
                 description="Where are you based, and where can people find more of your work?"
                 footerText="These will be displayed on your public profile."
@@ -656,6 +676,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Profile Theme"
                 description="Choose the primary color gradient for your public profile banner."
                 footerText="Pick a color that fits your brand."
@@ -685,6 +708,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Social Links"
                 description="Connect your social media accounts."
                 footerText="Links will appear as icons on your profile."
@@ -727,6 +753,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Custom Links (Link in Bio)"
                 description="Add custom links to highlight your portfolio, videos, or projects."
                 footerText="Add up to 5 custom links."
@@ -786,6 +815,9 @@ export default function SettingsPage() {
               </SettingCard>
 
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Email Address"
                 description="The email address associated with your account."
                 footerText="We will send a verification email if you change this."
@@ -956,6 +988,9 @@ export default function SettingsPage() {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Active Devices"
                 description="Manage devices currently logged into your account."
                 footerText="Revoking all other sessions will log you out everywhere else."
@@ -997,6 +1032,9 @@ export default function SettingsPage() {
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
               <SettingCard
+                messages={messages}
+                deleteConfirm={deleteConfirm}
+                profileEmail={profile?.email}
                 title="Delete Account"
                 description="Permanently remove your personal account and all of its contents from the platform. This action is not reversible."
                 footerText="Proceed with extreme caution."
