@@ -16,7 +16,11 @@ import {
   Bell,
   Code,
   Sun,
-  Moon
+  Moon,
+  FolderPlus,
+  FileText,
+  Webhook,
+  Building2
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
@@ -33,6 +37,10 @@ import {
 
 const navItems = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Projects', href: '/dashboard/projects', icon: FolderPlus },
+  { name: 'Organization', href: '/dashboard/organization', icon: Building2 },
+  { name: 'Blogs', href: '/dashboard/blogs', icon: FileText },
+  { name: 'APIs', href: '/dashboard/apis', icon: Webhook },
   { name: 'Analytics', href: '/dashboard/analytics', icon: Users },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];

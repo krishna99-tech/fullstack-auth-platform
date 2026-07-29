@@ -13,7 +13,12 @@ import {
   User,
   Moon,
   Sun,
-  Loader2
+  Loader2,
+  FolderPlus,
+  Users,
+  FileText,
+  Webhook,
+  Building2
 } from 'lucide-react';
 
 import {
@@ -33,6 +38,26 @@ const navItems = [
     label: "Dashboard",
     href: "/dashboard",
     icon: LayoutDashboard,
+  },
+  {
+    label: "Projects",
+    href: "/dashboard/projects",
+    icon: FolderPlus,
+  },
+  {
+    label: "Organization",
+    href: "/dashboard/organization",
+    icon: Building2,
+  },
+  {
+    label: "Blogs",
+    href: "/dashboard/blogs",
+    icon: FileText,
+  },
+  {
+    label: "APIs",
+    href: "/dashboard/apis",
+    icon: Webhook,
   },
   {
     label: "Analytics",

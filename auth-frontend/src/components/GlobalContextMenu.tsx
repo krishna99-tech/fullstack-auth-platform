@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   ArrowLeft,
@@ -14,6 +14,11 @@ import {
   LogOut,
   Moon,
   Sun,
+  Loader2,
+  FolderPlus,
+  Building2,
+  FileText,
+  Webhook,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
@@ -25,12 +30,18 @@ interface Position {
 
 export function GlobalContextMenu() {
   const router = useRouter();
+  const pathname = usePathname();
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (pathname === "/") {
+      if (isOpen) setIsOpen(false);
+      return;
+    }
     const handleContextMenu = (e: MouseEvent) => {
       // Allow default right-click if Shift key is held or if clicking inside an input/textarea
       const target = e.target as HTMLElement;
@@ -93,7 +104,7 @@ export function GlobalContextMenu() {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("scroll", handleScroll, true);
     };
-  }, [isOpen]);
+  }, [isOpen, pathname]);
 
   const handleAction = (action: () => void) => {
     action();
@@ -105,6 +116,8 @@ export function GlobalContextMenu() {
       navigator.clipboard.writeText(window.location.href);
     }
   };
+
+  if (pathname === "/") return null;
 
   return (
     <AnimatePresence>
@@ -165,6 +178,26 @@ export function GlobalContextMenu() {
             onClick={() => handleAction(() => router.push("/dashboard"))}
           />
           <MenuItem
+            icon={<FolderPlus className="w-4 h-4" />}
+            label="Projects"
+            onClick={() => handleAction(() => router.push("/dashboard/projects"))}
+          />
+          <MenuItem
+            icon={<Building2 className="w-4 h-4" />}
+            label="Organization"
+            onClick={() => handleAction(() => router.push("/dashboard/organization"))}
+          />
+          <MenuItem
+            icon={<FileText className="w-4 h-4" />}
+            label="Blogs"
+            onClick={() => handleAction(() => router.push("/dashboard/blogs"))}
+          />
+          <MenuItem
+            icon={<Webhook className="w-4 h-4" />}
+            label="APIs"
+            onClick={() => handleAction(() => router.push("/dashboard/apis"))}
+          />
+          <MenuItem
             icon={<Settings className="w-4 h-4" />}
             label="Settings"
             onClick={() => handleAction(() => router.push("/dashboard/settings"))}
@@ -178,13 +211,15 @@ export function GlobalContextMenu() {
           <MenuSeparator />
 
           <MenuItem
-            icon={<LogOut className="w-4 h-4 text-rose-500" />}
-            label="Sign Out"
-            onClick={() => handleAction(() => {
+            icon={isSigningOut ? <Loader2 className="w-4 h-4 text-rose-500 animate-spin" /> : <LogOut className="w-4 h-4 text-rose-500" />}
+            label={isSigningOut ? "Signing out..." : "Sign Out"}
+            onClick={() => {
+              setIsSigningOut(true);
               localStorage.removeItem("token");
               router.push("/login");
-            })}
+            }}
             danger
+            disabled={isSigningOut}
           />
         </motion.div>
       )}
@@ -197,20 +232,24 @@ function MenuItem({
   label,
   onClick,
   danger = false,
+  disabled = false,
 }: {
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       onClick={onClick}
+      disabled={disabled}
       className={cn(
         "flex items-center w-full gap-3 px-3 py-2 text-[13px] font-medium rounded-md transition-colors",
-        danger
+        disabled ? "opacity-50 cursor-not-allowed" : "",
+        danger && !disabled
           ? "hover:bg-rose-500/10 text-rose-600 dark:text-rose-400"
-          : "hover:bg-black/5 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white"
+          : !disabled ? "hover:bg-black/5 dark:hover:bg-white/10 text-zinc-700 dark:text-zinc-300 hover:text-black dark:hover:text-white" : "text-zinc-500 dark:text-zinc-400"
       )}
     >
       {icon}
