@@ -45,79 +45,145 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     notFound();
   }
 
+  let user: UserProfile | null = null;
+  let status = 200;
+
   try {
     // Fetch data from the public endpoint (no caching for instant privacy updates)
     const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/user/${username}`, {
       cache: 'no-store'
     });
+    status = res.status;
 
-    if (!res.ok) {
-      if (res.status === 404) notFound();
-      if (res.status === 403) {
-        // Return a sleek "Private Profile" card instead of crashing
-        return (
-          <div className="min-h-screen flex w-full bg-zinc-50 dark:bg-[#000] text-black dark:text-white">
-            
-            {/* Left Side: Profile Card */}
-            <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 lg:p-12 overflow-y-auto">
-              <div className="lg:hidden mb-8 w-full max-w-md flex items-center justify-center sm:justify-start animate-in fade-in slide-in-from-top-4 duration-500">
-                <Link href="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
-                  Platform
-                </Link>
-              </div>
-
-              <div className="max-w-md w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-2xl shadow-sm overflow-hidden p-8 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-                <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6">
-                  <Lock className="w-8 h-8 text-zinc-400" />
-                </div>
-                <h1 className="text-xl font-bold tracking-tight mb-2">This profile is private</h1>
-                <p className="text-zinc-500 dark:text-zinc-400 mb-8">
-                  @{username} has chosen not to share their profile publicly.
-                </p>
-                <Link href="/dashboard" className="text-sm font-medium hover:underline text-black dark:text-white">
-                  Go to my Dashboard &rarr;
-                </Link>
-              </div>
-            </div>
-
-            {/* Right Side: Branding/Graphic (Hidden on Mobile) - Always Dark */}
-            <div className="dark hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 overflow-hidden bg-zinc-950 text-white border-l border-zinc-900">
-              {/* Decorative Background Elements */}
-              <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
-              <div className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
-              
-              {/* Subtle dot pattern overlay */}
-              <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSJ0cmFuc3BhcmVudCIvPgo8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPgo8L3N2Zz4=')] opacity-50" />
-
-              {/* Content */}
-              <div className="relative z-10 max-w-lg text-center">
-                <div className="inline-block p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 mb-8 shadow-2xl">
-                  <Lock className="w-16 h-16 text-zinc-400" />
-                </div>
-                <h2 className="text-4xl font-bold tracking-tight text-white mb-6">
-                  Private Profile
-                </h2>
-                <p className="text-zinc-400 text-lg leading-relaxed mb-8">
-                  This user has chosen to keep their profile information private.
-                </p>
-                <div className="pt-8 border-t border-white/10">
-                  <h3 className="text-xl font-semibold text-white mb-3">Want your own profile?</h3>
-                  <p className="text-zinc-400 mb-6 text-sm">Join thousands of creators building their digital identity.</p>
-                  <Link href="/signup" className="inline-flex items-center justify-center h-12 px-8 font-medium tracking-wide text-white transition duration-200 bg-blue-600 rounded-full hover:bg-blue-500 focus:shadow-outline focus:outline-none">
-                    Create your profile
-                  </Link>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        );
-      }
-      throw new Error('Failed to fetch user');
+    if (res.ok) {
+      user = await res.json();
     }
+  } catch (error) {
+    status = 500;
+  }
 
-    const user: UserProfile = await res.json();
-    
+  if (status === 404) {
+    return (
+      <div className="min-h-screen flex w-full bg-zinc-50 dark:bg-[#000] text-black dark:text-white">
+        
+        {/* Left Side: Profile Card */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 lg:p-12 overflow-y-auto">
+          <div className="lg:hidden mb-8 w-full max-w-md flex items-center justify-center sm:justify-start animate-in fade-in slide-in-from-top-4 duration-500">
+            <Link href="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
+              Platform
+            </Link>
+          </div>
+
+          <div className="max-w-md w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-2xl shadow-sm overflow-hidden p-8 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6">
+              <UserPlus className="w-8 h-8 text-zinc-400" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight mb-2">User not found</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8">
+              The user @{username} does not exist.
+            </p>
+            <Link href="/" className="text-sm font-medium hover:underline text-black dark:text-white">
+              Return to Home &rarr;
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Side: Branding/Graphic (Hidden on Mobile) - Always Dark */}
+        <div className="dark hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 overflow-hidden bg-zinc-950 text-white border-l border-zinc-900">
+          {/* Decorative Background Elements */}
+          <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
+          
+          {/* Subtle dot pattern overlay */}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSJ0cmFuc3BhcmVudCIvPgo8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPgo8L3N2Zz4=')] opacity-50" />
+
+          {/* Content */}
+          <div className="relative z-10 max-w-lg text-center">
+            <div className="inline-block p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 mb-8 shadow-2xl">
+              <UserPlus className="w-16 h-16 text-zinc-400" />
+            </div>
+            <h2 className="text-4xl font-bold tracking-tight text-white mb-6">
+              Claim this Profile
+            </h2>
+            <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+              The username @{username} is currently available. Grab it before someone else does!
+            </p>
+            <div className="pt-8 border-t border-white/10">
+              <Link href="/signup" className="inline-flex items-center justify-center h-12 px-8 font-medium tracking-wide text-white transition duration-200 bg-blue-600 rounded-full hover:bg-blue-500 focus:shadow-outline focus:outline-none">
+                Claim @{username}
+              </Link>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  if (status === 403) {
+    // Return a sleek "Private Profile" card instead of crashing
+    return (
+      <div className="min-h-screen flex w-full bg-zinc-50 dark:bg-[#000] text-black dark:text-white">
+        
+        {/* Left Side: Profile Card */}
+        <div className="w-full lg:w-1/2 flex flex-col items-center justify-center p-4 sm:p-8 lg:p-12 overflow-y-auto">
+          <div className="lg:hidden mb-8 w-full max-w-md flex items-center justify-center sm:justify-start animate-in fade-in slide-in-from-top-4 duration-500">
+            <Link href="/" className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500 tracking-tight">
+              Platform
+            </Link>
+          </div>
+
+          <div className="max-w-md w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-2xl shadow-sm overflow-hidden p-8 flex flex-col items-center justify-center text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="w-16 h-16 bg-zinc-100 dark:bg-zinc-900 rounded-full flex items-center justify-center mb-6">
+              <Lock className="w-8 h-8 text-zinc-400" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight mb-2">This profile is private</h1>
+            <p className="text-zinc-500 dark:text-zinc-400 mb-8">
+              @{username} has chosen not to share their profile publicly.
+            </p>
+            <Link href="/dashboard" className="text-sm font-medium hover:underline text-black dark:text-white">
+              Go to my Dashboard &rarr;
+            </Link>
+          </div>
+        </div>
+
+        {/* Right Side: Branding/Graphic (Hidden on Mobile) - Always Dark */}
+        <div className="dark hidden lg:flex lg:w-1/2 relative items-center justify-center p-12 overflow-hidden bg-zinc-950 text-white border-l border-zinc-900">
+          {/* Decorative Background Elements */}
+          <div className="absolute top-1/4 -right-1/4 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[120px] pointer-events-none" />
+          <div className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-purple-600/20 rounded-full blur-[100px] pointer-events-none" />
+          
+          {/* Subtle dot pattern overlay */}
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4IiBoZWlnaHQ9IjgiPgo8cmVjdCB3aWR0aD0iOCIgaGVpZ2h0PSI4IiBmaWxsPSJ0cmFuc3BhcmVudCIvPgo8Y2lyY2xlIGN4PSIyIiBjeT0iMiIgcj0iMSIgZmlsbD0icmdiYSgyNTUsMjU1LDI1NSwwLjA1KSIvPgo8L3N2Zz4=')] opacity-50" />
+
+          {/* Content */}
+          <div className="relative z-10 max-w-lg text-center">
+            <div className="inline-block p-4 rounded-2xl bg-white/5 backdrop-blur-xl border border-white/10 mb-8 shadow-2xl">
+              <Lock className="w-16 h-16 text-zinc-400" />
+            </div>
+            <h2 className="text-4xl font-bold tracking-tight text-white mb-6">
+              Private Profile
+            </h2>
+            <p className="text-zinc-400 text-lg leading-relaxed mb-8">
+              This user has chosen to keep their profile information private.
+            </p>
+            <div className="pt-8 border-t border-white/10">
+              <h3 className="text-xl font-semibold text-white mb-3">Want your own profile?</h3>
+              <p className="text-zinc-400 mb-6 text-sm">Join thousands of creators building their digital identity.</p>
+              <Link href="/signup" className="inline-flex items-center justify-center h-12 px-8 font-medium tracking-wide text-white transition duration-200 bg-blue-600 rounded-full hover:bg-blue-500 focus:shadow-outline focus:outline-none">
+                Create your profile
+              </Link>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    );
+  }
+
+  if (!user) {
+    notFound();
+  }
     // Safely parse the date
     let joinedDate = 'Unknown date';
     if (user.createdAt) {
@@ -294,7 +360,4 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
 
       </div>
     );
-  } catch (error) {
-    notFound();
-  }
 }
