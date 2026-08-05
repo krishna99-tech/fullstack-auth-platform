@@ -2,6 +2,9 @@ node_modules/
 .env
 .env.*
 !.env.example
+.aws-sam/
+**/samconfig.toml
+!**/samconfig.toml.example
 .next/
 dist/
 build/

@@ -27,6 +27,7 @@ exports.getProfile = async (req, res) => {
         socialLinks: true,
         customLinks: true,
         theme: true,
+        avatarUrl: true,
       }
     });
 
@@ -56,6 +57,9 @@ exports.getProfile = async (req, res) => {
       socialLinks: user.socialLinks || { github: '', twitter: '', linkedin: '' },
       customLinks: user.customLinks || [],
       theme: user.theme || 'default',
+      avatarUrl: user.avatarUrl || '',
+      googleConnected: !!user.googleId,
+      githubConnected: !!user.githubId,
     };
 
     res.json(profile);
@@ -67,7 +71,7 @@ exports.getProfile = async (req, res) => {
 
 exports.updateProfile = async (req, res) => {
   try {
-    const { name, phoneNumber, email, username, bio, location, website, socialLinks, customLinks, theme } = req.body;
+    const { name, phoneNumber, email, username, bio, location, website, socialLinks, customLinks, theme, avatarUrl } = req.body;
     
     const user = await prisma.user.findUnique({ where: { id: req.user.userId } });
     if (!user) {
@@ -83,6 +87,7 @@ exports.updateProfile = async (req, res) => {
     if (socialLinks !== undefined) updates.socialLinks = socialLinks;
     if (customLinks !== undefined) updates.customLinks = customLinks;
     if (theme !== undefined) updates.theme = theme;
+    if (avatarUrl !== undefined) updates.avatarUrl = avatarUrl;
 
     // Handle username change
     if (username !== undefined && username !== user.username) {
@@ -140,6 +145,7 @@ exports.updateProfile = async (req, res) => {
         socialLinks: true,
         customLinks: true,
         theme: true,
+        avatarUrl: true,
       }
     });
 
@@ -265,7 +271,7 @@ exports.getSessions = async (req, res) => {
       isCurrent: s.id === req.sessionId
     }));
 
-    res.json(mappedSessions);
+    res.json({ sessions: mappedSessions });
   } catch (error) {
     console.error('Get sessions error:', error);
     res.status(500).json({ error: 'Internal server error' });

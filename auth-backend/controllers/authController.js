@@ -415,7 +415,8 @@ exports.getPublicProfile = async (req, res) => {
       website: user.website,
       socialLinks: user.socialLinks,
       customLinks: user.customLinks,
-      theme: user.theme
+      theme: user.theme,
+      avatarUrl: user.avatarUrl || null,
     });
   } catch (error) {
     console.error('Get public profile error:', error);

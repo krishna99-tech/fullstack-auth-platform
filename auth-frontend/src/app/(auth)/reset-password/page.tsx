@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { resetPassword } from '@/lib/auth-backend-client';
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
@@ -30,17 +31,7 @@ function ResetPasswordContent() {
     }
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/reset-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token, newPassword: password }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to reset password');
-      }
-
+      const data = await resetPassword(email, token, password);
       setMessage(data.message);
       setPassword('');
       setConfirmPassword('');

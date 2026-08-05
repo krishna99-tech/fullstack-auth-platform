@@ -42,7 +42,7 @@ const footerNavList = [
     {
         label: "Resources",
         items: [
-            { label: "Blog", href: "#" },
+            { label: "Blog", href: "/blog" },
             { label: "Newsletter", href: "#" },
             { label: "Events", href: "#" },
             { label: "Help centre", href: "#" },

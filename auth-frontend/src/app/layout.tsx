@@ -21,6 +21,7 @@ export const metadata: Metadata = {
   title: "Authlog — Secure Auth Platform",
   description: "Secure and modern authentication platform",
   manifest: "/manifest.json",
+  icons: { icon: "/favicon.svg" },
 };
 
 export default function RootLayout({

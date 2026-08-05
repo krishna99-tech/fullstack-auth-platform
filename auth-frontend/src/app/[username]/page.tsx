@@ -3,7 +3,6 @@ import { CalendarDays, MapPin, Link as LinkIcon, ShieldCheck, Lock, UserPlus, Ex
 import Link from 'next/link';
 import TrackView from './TrackView';
 import TrackLink from './TrackLink';
-import { AUTHLOG_API, TENANT_SLUG } from '@/lib/config';
 import { legacyGetPublicProfile } from '@/lib/legacy-api';
 
 interface UserProfile {
@@ -12,6 +11,7 @@ interface UserProfile {
   name: string;
   createdAt: string;
   avatarInitial: string;
+  avatarUrl?: string | null;
   bio?: string;
   location?: string;
   website?: string;
@@ -51,19 +51,8 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   let status = 200;
 
   try {
-    const res = await fetch(`${AUTHLOG_API}/v1/users/public/${username}`, {
-      headers: { 'X-Tenant-Slug': TENANT_SLUG },
-      cache: 'no-store',
-    });
-    if (res.ok) {
-      user = await res.json();
-      status = 200;
-    } else if (res.status === 404) {
-      user = await legacyGetPublicProfile(username);
-      status = user ? 200 : 404;
-    } else {
-      status = res.status;
-    }
+    user = await legacyGetPublicProfile(username);
+    status = user ? 200 : 404;
   } catch (error) {
     status = 500;
   }
@@ -240,8 +229,12 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           
           <div className="px-8 pb-8 relative">
             {/* Avatar */}
-            <div className={`absolute -top-12 border-4 border-white dark:border-[#0a0a0a] h-24 w-24 rounded-full bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center text-3xl font-bold text-black dark:text-white shadow-md`}>
-              {user.avatarInitial || (user.username ? user.username.charAt(0).toUpperCase() : '?')}
+            <div className={`absolute -top-12 border-4 border-white dark:border-[#0a0a0a] h-24 w-24 rounded-full overflow-hidden bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center text-3xl font-bold text-black dark:text-white shadow-md`}>
+              {user.avatarUrl ? (
+                <img src={user.avatarUrl} alt={user.name || user.username} className="h-full w-full object-cover" />
+              ) : (
+                user.avatarInitial || (user.username ? user.username.charAt(0).toUpperCase() : '?')
+              )}
             </div>
 
             {/* Profile Info */}

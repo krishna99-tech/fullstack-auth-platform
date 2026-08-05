@@ -1,4 +1,4 @@
-import { AUTHLOG_API, TENANT_SLUG } from './config';
+import { AUTHLOG_API, TENANT_SLUG, authlogPath } from './config';
 import { tokens } from './token-store';
 
 export class AuthlogError extends Error {
@@ -161,7 +161,7 @@ export async function disableMfa(accessToken: string, code: string, password: st
 }
 
 export async function getSocialStatus() {
-  const res = await fetch(`${AUTHLOG_API}/v1/auth/social/status`, {
+  const res = await fetch(authlogPath('/auth/social/status'), {
     headers: buildHeaders(),
   });
   return parseResponse<{ google: boolean; github: boolean }>(res);
@@ -170,7 +170,7 @@ export async function getSocialStatus() {
 export function socialAuthUrl(provider: 'google' | 'github', linkToken?: string) {
   const params = new URLSearchParams({ tenant: TENANT_SLUG });
   if (linkToken) params.set('link_token', linkToken);
-  return `${AUTHLOG_API}/v1/auth/${provider}?${params.toString()}`;
+  return `${authlogPath(`/auth/${provider}`)}?${params.toString()}`;
 }
 
 export interface OAuthClient {

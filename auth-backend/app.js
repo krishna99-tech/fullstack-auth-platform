@@ -8,6 +8,7 @@ const { docClient } = require('./db');
 const DynamoDBStore = require('connect-dynamodb')(session);
 
 const authRoutes = require('./routes/authRoutes');
+const blogRoutes = require('./routes/blogRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -15,7 +16,8 @@ app.set('trust proxy', true);
 const allowedOrigins = [
   process.env.FRONTEND_URL || 'http://localhost:3000',
   'http://192.168.29.139:3000',
-  'http://127.0.0.1:3000'
+  'http://127.0.0.1:3000',
+  'https://fullstack-auth-platform-topaz.vercel.app',
 ];
 
 app.use(cors({
@@ -46,6 +48,7 @@ app.use(passport.session());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/blog', blogRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

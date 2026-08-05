@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import { verifyEmail, resendVerificationPublic } from '@/lib/auth-backend-client';
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
 
@@ -26,23 +27,13 @@ function VerifyEmailContent() {
       setAutoVerifying(true);
       setLoading(true);
 
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: emailParam, token: tokenParam }),
-      })
-        .then(async (res) => {
-          const data = await res.json();
-          if (!res.ok) throw new Error(data.error || 'Verification failed');
-          setMessage(data.message || 'Email verified successfully!');
-        })
+      verifyEmail(emailParam, tokenParam)
+        .then((data) => setMessage(data.message || 'Email verified successfully!'))
         .catch((err) => {
-          setError(err.message);
-          setAutoVerifying(false); // Fall back to manual form on error
+          setError(err instanceof Error ? err.message : 'Verification failed');
+          setAutoVerifying(false);
         })
-        .finally(() => {
-          setLoading(false);
-        });
+        .finally(() => setLoading(false));
     }
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -53,16 +44,10 @@ function VerifyEmailContent() {
     setMessage('');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, token }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      const data = await verifyEmail(email, token);
       setMessage(data.message);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Verification failed');
     } finally {
       setLoading(false);
     }
@@ -78,20 +63,10 @@ function VerifyEmailContent() {
     setError('');
     
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/resend-verification-public`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email })
-      });
-      
-      const data = await res.json();
-      if (res.ok) {
-        setResendMessage('A new verification code has been sent to your email.');
-      } else {
-        setError(data.error || 'Failed to resend verification.');
-      }
-    } catch (err) {
-      setError('Failed to resend verification email.');
+      const data = await resendVerificationPublic(email);
+      setResendMessage(data.message || 'A new verification code has been sent to your email.');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to resend verification email.');
     } finally {
       setIsResending(false);
     }

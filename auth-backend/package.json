@@ -5,6 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "node server.js",
+    "deploy": "sam deploy",
+    "deploy:env": "node scripts/sam-deploy-env.js",
+    "deploy:guided": "node scripts/sam-deploy-env.js --guided",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],

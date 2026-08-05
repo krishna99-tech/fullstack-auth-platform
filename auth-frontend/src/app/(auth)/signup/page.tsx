@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff, User, AtSign, CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { AuthlogError, checkUsername } from '@/lib/authlog-client';
+import { ApiError, checkUsername } from '@/lib/auth-backend-client';
 import { SocialAuthSection } from '@/components/auth/social-auth-section';
 
 type UsernameStatus = 'idle' | 'checking' | 'available' | 'taken' | 'invalid';
@@ -70,9 +70,9 @@ export default function Signup() {
 
     try {
       await register(email, password, name.trim() || email.split('@')[0], username.trim().toLowerCase());
-      router.push('/login?registered=1');
+      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
     } catch (err: unknown) {
-      const message = err instanceof AuthlogError ? err.message : err instanceof Error ? err.message : 'Failed to sign up';
+      const message = err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to sign up';
       setError(message);
     } finally {
       setLoading(false);

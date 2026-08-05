@@ -5,8 +5,6 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { tokens } from '@/lib/token-store';
-import { legacyGetProfile, legacyGetSessions, hasLegacyApi } from '@/lib/legacy-api';
-import { LEGACY_API } from '@/lib/config';
 import {
   setupMfa,
   verifyMfa,
@@ -16,29 +14,20 @@ import {
   revokeOtherSessions,
   socialAuthUrl,
   getSocialStatus,
-} from '@/lib/authlog-client';
+  getProfile,
+  updateProfile,
+  updatePreferences,
+  changePassword,
+  resendVerification,
+  disconnectProvider,
+  deleteAccount,
+  type UserProfile,
+} from '@/lib/auth-backend-client';
 import { RefreshCcw, Monitor, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
-interface UserProfile {
-  id: string;
-  email: string;
-  username: string | null;
-  name: string | null;
+interface UserProfileState extends UserProfile {
   phoneNumber: string | null;
-  createdAt: string;
-  isVerified: boolean;
-  mfaEnabled?: boolean;
-  googleConnected?: boolean;
-  githubConnected?: boolean;
-  emailNotifications?: boolean;
-  isProfilePublic?: boolean;
-  bio?: string;
-  location?: string;
-  website?: string;
-  theme?: string;
-  socialLinks?: { github?: string, twitter?: string, linkedin?: string };
-  customLinks?: { title: string, url: string }[];
 }
 
 interface Session {
@@ -103,11 +92,11 @@ const SettingCard = ({
 
 export default function SettingsPage() {
   const router = useRouter();
-  const { user: authUser, getAccessToken } = useAuth();
+  const { getAccessToken } = useAuth();
   useAuthGuard();
 
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [profile, setProfile] = useState<UserProfileState | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
 
   const [activeTab, setActiveTab] = useState('general');
@@ -121,6 +110,7 @@ export default function SettingsPage() {
   const [editLocation, setEditLocation] = useState('');
   const [editWebsite, setEditWebsite] = useState('');
   const [editTheme, setEditTheme] = useState('default');
+  const [editAvatarUrl, setEditAvatarUrl] = useState('');
   const [editSocials, setEditSocials] = useState({ github: '', twitter: '', linkedin: '' });
   const [customLinks, setCustomLinks] = useState<{title: string, url: string}[]>([]);
 
@@ -132,6 +122,7 @@ export default function SettingsPage() {
   const [isUpdatingBio, setIsUpdatingBio] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingTheme, setIsUpdatingTheme] = useState(false);
+  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
   const [isUpdatingSocials, setIsUpdatingSocials] = useState(false);
   const [isUpdatingCustomLinks, setIsUpdatingCustomLinks] = useState(false);
   
@@ -159,6 +150,7 @@ export default function SettingsPage() {
   const [mfaDisablePassword, setMfaDisablePassword] = useState('');
   const [showMfaDisable, setShowMfaDisable] = useState(false);
   const [socialProviders, setSocialProviders] = useState({ google: false, github: false });
+  const [disconnectingProvider, setDisconnectingProvider] = useState<string | null>(null);
 
   // Sessions
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
@@ -167,87 +159,6 @@ export default function SettingsPage() {
   // Danger Zone
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const token = getAccessToken();
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
-    const fetchData = async () => {
-      try {
-        if (authUser) {
-          setProfile({
-            id: authUser.sub,
-            email: authUser.email,
-            username: authUser.username || null,
-            name: authUser.name || null,
-            phoneNumber: null,
-            createdAt: new Date().toISOString(),
-            isVerified: authUser.email_verified,
-            mfaEnabled: authUser.mfa_enabled,
-            googleConnected: authUser.google_connected,
-            githubConnected: authUser.github_connected,
-          });
-          setEditName(authUser.name || '');
-          setEditEmail(authUser.email || '');
-          setEditUsername(authUser.username || '');
-        }
-
-        const accessToken = getAccessToken();
-        if (accessToken) {
-          try {
-            const sessionData = await listSessions(accessToken);
-            setSessions(sessionData.sessions);
-          } catch {
-            /* sessions optional */
-          }
-        }
-
-        getSocialStatus().then(setSocialProviders).catch(() => {});
-
-        if (!hasLegacyApi()) {
-          setLoading(false);
-          return;
-        }
-
-        const [legacyProfile, legacySessions] = await Promise.all([
-          legacyGetProfile(),
-          legacyGetSessions(),
-        ]);
-
-        if (!legacyProfile && !authUser) {
-          router.push('/login?error=session_expired');
-          return;
-        }
-
-        if (legacyProfile) {
-          const user = legacyProfile;
-          setProfile(user);
-          setEditName(user.name || '');
-          setEditUsername(user.username || '');
-          setEditEmail(user.email || '');
-          setEditBio(user.bio || '');
-          setEditLocation(user.location || '');
-          setEditWebsite(user.website || '');
-          setEditTheme(user.theme || 'default');
-          setEditSocials(user.socialLinks || { github: '', twitter: '', linkedin: '' });
-          setCustomLinks(user.customLinks || []);
-        }
-
-        if (legacySessions) {
-          setSessions(legacySessions);
-        }
-      } catch (err) {
-        console.error('Failed to load settings data', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [router, authUser, getAccessToken]);
 
   const showMessage = (field: string, type: 'error' | 'success', text: string) => {
     setMessages(prev => ({ ...prev, [field]: { type, text } }));
@@ -260,54 +171,85 @@ export default function SettingsPage() {
     }, 4000);
   };
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const linked = params.get('linked');
+    if (linked === 'google' || linked === 'github') {
+      showMessage('social', 'success', `${linked === 'google' ? 'Google' : 'GitHub'} account linked successfully.`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
+    const token = getAccessToken();
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
+    const fetchData = async () => {
+      try {
+        const accessToken = getAccessToken();
+        if (!accessToken) return;
+
+        const [userProfile, sessionData] = await Promise.all([
+          getProfile(accessToken).catch(() => null),
+          listSessions(accessToken).catch(() => ({ sessions: [] })),
+        ]);
+
+        if (!userProfile) {
+          router.push('/login?error=session_expired');
+          return;
+        }
+
+        setProfile({ ...userProfile, phoneNumber: userProfile.phoneNumber ?? null });
+        setEditName(userProfile.name || '');
+        setEditUsername(userProfile.username || '');
+        setEditEmail(userProfile.email || '');
+        setEditBio(userProfile.bio || '');
+        setEditLocation(userProfile.location || '');
+        setEditWebsite(userProfile.website || '');
+        setEditTheme(userProfile.theme || 'default');
+        setEditAvatarUrl(userProfile.avatarUrl || '');
+        setEditSocials({
+          github: userProfile.socialLinks?.github || '',
+          twitter: userProfile.socialLinks?.twitter || '',
+          linkedin: userProfile.socialLinks?.linkedin || '',
+        });
+        setCustomLinks(userProfile.customLinks || []);
+        setSessions(sessionData.sessions);
+
+        getSocialStatus().then(setSocialProviders).catch(() => {});
+      } catch (err) {
+        console.error('Failed to load settings data', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
+  }, [router, getAccessToken]);
+
   const handleResendVerification = async () => {
     setIsResending(true);
-    const token = getAccessToken();
     try {
-      const res = await fetch(`${LEGACY_API}/auth/resend-verification`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        showMessage('email', 'success', 'Verification email sent! Check your inbox.');
-      } else {
-        showMessage('email', 'error', 'Failed to send verification email.');
-      }
-    } catch (err) {
-      showMessage('email', 'error', 'An error occurred.');
+      await resendVerification(getAccessToken() || undefined);
+      showMessage('email', 'success', 'Verification email sent! Check your inbox.');
+    } catch {
+      showMessage('email', 'error', 'Failed to send verification email.');
     } finally {
       setIsResending(false);
     }
   };
 
-  const handleUpdateField = async (field: string, value: any, setLoadingState: (state: boolean) => void) => {
+  const handleUpdateField = async (field: string, value: unknown, setLoadingState: (state: boolean) => void) => {
     setLoadingState(true);
     try {
-      const token = getAccessToken();
-      const payload = {
-        name: profile?.name || '',
-        username: profile?.username || '',
-        email: profile?.email || '',
-        phoneNumber: profile?.phoneNumber || '',
-        [field]: value
-      };
-
-      const res = await fetch(`${LEGACY_API}/auth/profile`, {
-        method: 'PUT',
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json' 
-        },
-        body: JSON.stringify(payload)
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || 'Failed to update profile');
-
-      setProfile(prev => prev ? { ...prev, ...(data.user || {}) } : data.user);
+      const data = await updateProfile({ [field]: value } as Parameters<typeof updateProfile>[0]);
+      setProfile((prev) => (prev ? { ...prev, ...(data.user || {}) } : data.user));
       showMessage(field, 'success', 'Successfully updated.');
-    } catch (err: any) {
-      showMessage(field, 'error', err.message);
+    } catch (err: unknown) {
+      showMessage(field, 'error', err instanceof Error ? err.message : 'Update failed');
     } finally {
       setLoadingState(false);
     }
@@ -320,21 +262,13 @@ export default function SettingsPage() {
     }
     setIsChangingPwd(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${LEGACY_API}/auth/change-password`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentPassword, newPassword })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || data.message || 'Failed to change password');
-      
+      await changePassword(currentPassword, newPassword, getAccessToken() || undefined);
       showMessage('password', 'success', 'Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err: any) {
-      showMessage('password', 'error', err.message);
+    } catch (err: unknown) {
+      showMessage('password', 'error', err instanceof Error ? err.message : 'Failed to change password');
     } finally {
       setIsChangingPwd(false);
     }
@@ -364,7 +298,7 @@ export default function SettingsPage() {
     if (!token) return;
     setIsTogglingMfa(true);
     try {
-      await disableMfa(token, mfaDisableCode, mfaDisablePassword);
+      await disableMfa(token, mfaDisableCode);
       setProfile((prev) => (prev ? { ...prev, mfaEnabled: false } : null));
       setShowMfaDisable(false);
       setMfaDisableCode('');
@@ -397,18 +331,11 @@ export default function SettingsPage() {
   const handleToggleNotifications = async (enable: boolean) => {
     setIsTogglingNotifications(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${LEGACY_API}/auth/preferences`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ emailNotifications: enable })
-      });
-      if (!res.ok) throw new Error('Failed to toggle notifications');
-
-      setProfile(prev => prev ? { ...prev, emailNotifications: enable } : null);
+      await updatePreferences({ emailNotifications: enable }, getAccessToken() || undefined);
+      setProfile((prev) => (prev ? { ...prev, emailNotifications: enable } : null));
       showMessage('notifications', 'success', 'Preferences updated.');
-    } catch (err: any) {
-      showMessage('notifications', 'error', err.message);
+    } catch (err: unknown) {
+      showMessage('notifications', 'error', err instanceof Error ? err.message : 'Failed to update preferences');
     } finally {
       setIsTogglingNotifications(false);
     }
@@ -417,20 +344,34 @@ export default function SettingsPage() {
   const handleToggleProfilePublic = async (enable: boolean) => {
     setIsTogglingProfilePublic(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${LEGACY_API}/auth/preferences`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ isProfilePublic: enable })
-      });
-      if (!res.ok) throw new Error('Failed to update profile visibility');
-
-      setProfile(prev => prev ? { ...prev, isProfilePublic: enable } : null);
+      await updatePreferences({ isProfilePublic: enable }, getAccessToken() || undefined);
+      setProfile((prev) => (prev ? { ...prev, isProfilePublic: enable } : null));
       showMessage('profilePublic', 'success', 'Profile visibility updated.');
-    } catch (err: any) {
-      showMessage('profilePublic', 'error', err.message);
+    } catch (err: unknown) {
+      showMessage('profilePublic', 'error', err instanceof Error ? err.message : 'Failed to update visibility');
     } finally {
       setIsTogglingProfilePublic(false);
+    }
+  };
+
+  const handleDisconnectProvider = async (provider: 'google' | 'github') => {
+    setDisconnectingProvider(provider);
+    try {
+      await disconnectProvider(provider, getAccessToken() || undefined);
+      setProfile((prev) =>
+        prev
+          ? {
+              ...prev,
+              googleConnected: provider === 'google' ? false : prev.googleConnected,
+              githubConnected: provider === 'github' ? false : prev.githubConnected,
+            }
+          : null
+      );
+      showMessage('social', 'success', `${provider === 'google' ? 'Google' : 'GitHub'} disconnected.`);
+    } catch (err: unknown) {
+      showMessage('social', 'error', err instanceof Error ? err.message : 'Failed to disconnect account');
+    } finally {
+      setDisconnectingProvider(null);
     }
   };
 
@@ -439,16 +380,8 @@ export default function SettingsPage() {
     try {
       const token = getAccessToken();
       if (!token) return;
-      if (hasLegacyApi()) {
-        const res = await fetch(`${LEGACY_API}/auth/sessions/${sessionId}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      } else {
-        await revokeSession(token, sessionId);
-        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
-      }
+      await revokeSession(token, sessionId);
+      setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
       console.error(err);
     } finally {
@@ -461,16 +394,8 @@ export default function SettingsPage() {
     try {
       const token = getAccessToken();
       if (!token) return;
-      if (hasLegacyApi()) {
-        const res = await fetch(`${LEGACY_API}/auth/sessions`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) setSessions((prev) => prev.filter((s) => s.isCurrent));
-      } else {
-        await revokeOtherSessions(token);
-        setSessions((prev) => prev.filter((s) => s.isCurrent));
-      }
+      await revokeOtherSessions(token);
+      setSessions((prev) => prev.filter((s) => s.isCurrent));
     } catch (err) {
       console.error(err);
     } finally {
@@ -484,20 +409,11 @@ export default function SettingsPage() {
     }
     setIsDeleting(true);
     try {
-      const token = getAccessToken();
-      const res = await fetch(`${LEGACY_API}/auth/me`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        tokens.clear();
-        router.push('/login?deleted=true');
-      } else {
-        const data = await res.json();
-        throw new Error(data.error || 'Failed to delete account');
-      }
-    } catch (err: any) {
-      showMessage('delete', 'error', err.message);
+      await deleteAccount(getAccessToken() || undefined);
+      tokens.clear();
+      router.push('/login?deleted=true');
+    } catch (err: unknown) {
+      showMessage('delete', 'error', err instanceof Error ? err.message : 'Failed to delete account');
       setIsDeleting(false);
     }
   };
@@ -567,16 +483,37 @@ export default function SettingsPage() {
                 deleteConfirm={deleteConfirm}
                 profileEmail={profile?.email}
                 title="Avatar & User ID"
-                description="Your unique identifier on the platform."
-                footerText="An avatar is generated based on your name."
+                description="Set a profile image URL or use the generated initial."
+                footerText="Paste a direct image URL (https://...)."
+                onSave={() => handleUpdateField('avatarUrl', editAvatarUrl, setIsUpdatingAvatar)}
+                isSaving={isUpdatingAvatar}
+                messageKey="avatarUrl"
               >
                 <div className="flex items-center gap-6">
-                  <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-zinc-200 to-zinc-50 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center text-black dark:text-white text-xl font-bold border border-zinc-300 dark:border-zinc-600 shadow-sm">
-                    {profile?.name ? profile.name.charAt(0).toUpperCase() : profile?.email.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex flex-col gap-1.5">
-                    <span className="text-[12px] font-medium text-[#888] uppercase tracking-wider">User ID</span>
-                    <span className="font-mono text-[13px] bg-zinc-100 dark:bg-[#111] py-1 px-2.5 rounded-md text-black dark:text-white border border-zinc-200 dark:border-[#333]">{profile?.id || 'Unknown'}</span>
+                  {editAvatarUrl ? (
+                    <img
+                      src={editAvatarUrl}
+                      alt="Avatar"
+                      className="h-16 w-16 rounded-full object-cover border border-zinc-300 dark:border-zinc-600 shadow-sm"
+                      onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                    />
+                  ) : (
+                    <div className="h-16 w-16 rounded-full bg-gradient-to-tr from-zinc-200 to-zinc-50 dark:from-zinc-800 dark:to-zinc-700 flex items-center justify-center text-black dark:text-white text-xl font-bold border border-zinc-300 dark:border-zinc-600 shadow-sm">
+                      {profile?.name ? profile.name.charAt(0).toUpperCase() : profile?.email.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex flex-col gap-3 flex-1 max-w-[360px]">
+                    <div className="flex flex-col gap-1.5">
+                      <span className="text-[12px] font-medium text-[#888] uppercase tracking-wider">User ID</span>
+                      <span className="font-mono text-[13px] bg-zinc-100 dark:bg-[#111] py-1 px-2.5 rounded-md text-black dark:text-white border border-zinc-200 dark:border-[#333]">{profile?.id || 'Unknown'}</span>
+                    </div>
+                    <input
+                      type="url"
+                      className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
+                      value={editAvatarUrl}
+                      onChange={(e) => setEditAvatarUrl(e.target.value)}
+                      placeholder="https://example.com/avatar.jpg"
+                    />
                   </div>
                 </div>
               </SettingCard>
@@ -941,12 +878,26 @@ export default function SettingsPage() {
                 <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
                   <h3 className="text-[16px] font-semibold text-black dark:text-white">Connected accounts</h3>
                   <p className="text-[14px] text-[#666] mt-1 mb-4">Link Google or GitHub for one-click sign-in.</p>
+                  {messages['social'] && (
+                    <div className="mb-4">
+                      <span className={messages['social'].type === 'error' ? 'text-[13px] text-rose-600 dark:text-rose-500 font-medium' : 'text-[13px] text-emerald-600 dark:text-emerald-500 font-medium'}>
+                        {messages['social'].text}
+                      </span>
+                    </div>
+                  )}
                   <div className="space-y-3 max-w-md">
                     {socialProviders.google && (
                       <div className="flex items-center justify-between py-2 border-b border-zinc-100 dark:border-[#222]">
                         <span className="text-sm">Google</span>
                         {profile?.googleConnected ? (
-                          <span className="text-xs text-emerald-600">Connected</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectProvider('google')}
+                            disabled={disconnectingProvider === 'google'}
+                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                          >
+                            {disconnectingProvider === 'google' ? 'Disconnecting...' : 'Disconnect'}
+                          </button>
                         ) : (
                           <a href={socialAuthUrl('google', getAccessToken() || undefined)} className="text-xs font-medium underline">Connect</a>
                         )}
@@ -956,7 +907,14 @@ export default function SettingsPage() {
                       <div className="flex items-center justify-between py-2">
                         <span className="text-sm">GitHub</span>
                         {profile?.githubConnected ? (
-                          <span className="text-xs text-emerald-600">Connected</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDisconnectProvider('github')}
+                            disabled={disconnectingProvider === 'github'}
+                            className="text-xs font-medium text-rose-600 hover:underline disabled:opacity-50"
+                          >
+                            {disconnectingProvider === 'github' ? 'Disconnecting...' : 'Disconnect'}
+                          </button>
                         ) : (
                           <a href={socialAuthUrl('github', getAccessToken() || undefined)} className="text-xs font-medium underline">Connect</a>
                         )}

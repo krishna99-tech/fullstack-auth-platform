@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
-import { AuthlogError, verifyMfaLogin } from '@/lib/authlog-client';
+import { ApiError, LOGIN_ERROR_MESSAGES, resendVerificationPublic, verifyMfaLogin } from '@/lib/auth-backend-client';
 import { SocialAuthSection } from '@/components/auth/social-auth-section';
 
 export default function Login() {
@@ -17,6 +17,8 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [needsVerification, setNeedsVerification] = useState(false);
+  const [resending, setResending] = useState(false);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [tempToken, setTempToken] = useState('');
   const [mfaCode, setMfaCode] = useState('');
@@ -27,8 +29,9 @@ export default function Login() {
     const registered = params.get('registered');
     const mfa = params.get('mfa');
     const token = params.get('token');
-    if (err === 'session_expired') setError('Your session has expired. Please log in again.');
-    if (err === 'oauth_failed') setError('Social sign-in failed. Try again or use email/password.');
+    if (err) {
+      setError(LOGIN_ERROR_MESSAGES[err] || 'Something went wrong. Please try again.');
+    }
     if (registered === '1') setSuccess('Account created. Sign in with your credentials.');
     if (mfa === '1' && token) {
       setMfaRequired(true);
@@ -36,10 +39,30 @@ export default function Login() {
     }
   }, []);
 
+  const handleResendVerification = async () => {
+    if (!email) {
+      setError('Enter your email address above, then resend verification.');
+      return;
+    }
+    setResending(true);
+    setError('');
+    try {
+      const data = await resendVerificationPublic(email);
+      setSuccess(data.message);
+      setNeedsVerification(false);
+    } catch (err: unknown) {
+      setError(err instanceof ApiError ? err.message : 'Failed to resend verification email.');
+    } finally {
+      setResending(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError('');
+    setSuccess('');
+    setNeedsVerification(false);
 
     try {
       const result = await login(email, password);
@@ -50,7 +73,16 @@ export default function Login() {
       }
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof AuthlogError ? err.message : err instanceof Error ? err.message : 'Failed to login');
+      if (err instanceof ApiError && err.needsVerification) {
+        setNeedsVerification(true);
+        setError('Please verify your email before signing in.');
+        return;
+      }
+      if (err instanceof ApiError && err.status === 429) {
+        setError(LOGIN_ERROR_MESSAGES.rate_limited);
+        return;
+      }
+      setError(err instanceof ApiError ? err.message : err instanceof Error ? err.message : 'Failed to login');
     } finally {
       setLoading(false);
     }
@@ -62,10 +94,10 @@ export default function Login() {
     setError('');
     try {
       const data = await verifyMfaLogin(tempToken, mfaCode);
-      await completeLogin(data.access_token, data.refresh_token);
+      await completeLogin(data.token);
       router.push('/dashboard');
     } catch (err: unknown) {
-      setError(err instanceof AuthlogError ? err.message : 'Invalid MFA code');
+      setError(err instanceof ApiError ? err.message : 'Invalid MFA code');
     } finally {
       setLoading(false);
     }
@@ -82,7 +114,25 @@ export default function Login() {
         <div className="bg-green-500/10 border border-green-500 text-green-600 dark:text-green-400 p-3 rounded mb-4 text-sm">{success}</div>
       )}
       {error && (
-        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">{error}</div>
+        <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">
+          {error}
+          {needsVerification && (
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resending}
+                className="text-sm font-medium underline hover:no-underline disabled:opacity-50"
+              >
+                {resending ? 'Sending...' : 'Resend verification email'}
+              </button>
+              <span className="text-red-400">·</span>
+              <Link href={`/verify-email?email=${encodeURIComponent(email)}`} className="text-sm font-medium underline hover:no-underline">
+                Enter verification code
+              </Link>
+            </div>
+          )}
+        </div>
       )}
 
       {mfaRequired ? (

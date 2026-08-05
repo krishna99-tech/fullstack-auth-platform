@@ -4,8 +4,18 @@ const passport = require('passport');
 const jwt = require('jsonwebtoken');
 const authController = require('../controllers/authController');
 const analyticsController = require('../controllers/analyticsController');
+const rateLimit = require('../middleware/rateLimit');
 
-// Public: check username availability (used during signup)
+const authRateLimit = rateLimit({ windowMs: 60_000, max: 10 });
+
+function oauthFailureRedirect(req, res) {
+  const err = req.query.error;
+  if (err === 'access_denied') {
+    return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_denied`);
+  }
+  return res.redirect(`${process.env.FRONTEND_URL}/login?error=oauth_failed`);
+}
+
 router.get('/check-username', async (req, res) => {
   const { username } = req.query;
   if (!username || typeof username !== 'string') {
@@ -21,11 +31,19 @@ router.get('/check-username', async (req, res) => {
   res.json({ available: !existing });
 });
 
-router.post('/signup', authController.signup);
+router.get('/social/status', (req, res) => {
+  const google = !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    && process.env.GOOGLE_CLIENT_ID !== 'dummy_id');
+  const github = !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET
+    && process.env.GITHUB_CLIENT_ID !== 'dummy_id');
+  res.json({ google, github });
+});
+
+router.post('/signup', authRateLimit, authController.signup);
 router.post('/verify', authController.verifyEmail);
-router.post('/resend-verification-public', authController.resendVerificationPublic);
-router.post('/login', authController.login);
-router.post('/forgot-password', authController.forgotPassword);
+router.post('/resend-verification-public', authRateLimit, authController.resendVerificationPublic);
+router.post('/login', authRateLimit, authController.login);
+router.post('/forgot-password', authRateLimit, authController.forgotPassword);
 router.post('/reset-password', authController.resetPassword);
 
 // Public User Profile Route
@@ -64,8 +82,18 @@ router.get('/google', (req, res, next) => {
   passport.authenticate('google', { scope: ['profile', 'email'], state })(req, res, next);
 });
 
-router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: process.env.FRONTEND_URL + '/login?error=oauth_failed' }),
+router.get('/google/callback',
+  (req, res, next) => {
+    if (req.query.error) return oauthFailureRedirect(req, res);
+    passport.authenticate('google', { session: false }, (err, user) => {
+      if (err || !user) {
+        const code = err?.message?.includes('link') ? 'oauth_link_failed' : 'oauth_failed';
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=${code}`);
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   async (req, res) => {
     // If they were linking, state will contain their token, redirect to settings
     if (req.query.state) {
@@ -117,8 +145,18 @@ router.get('/github', (req, res, next) => {
   passport.authenticate('github', { scope: ['user:email'], state })(req, res, next);
 });
 
-router.get('/github/callback', 
-  passport.authenticate('github', { failureRedirect: process.env.FRONTEND_URL + '/login?error=oauth_failed' }),
+router.get('/github/callback',
+  (req, res, next) => {
+    if (req.query.error) return oauthFailureRedirect(req, res);
+    passport.authenticate('github', { session: false }, (err, user) => {
+      if (err || !user) {
+        const code = err?.message?.includes('link') ? 'oauth_link_failed' : 'oauth_failed';
+        return res.redirect(`${process.env.FRONTEND_URL}/login?error=${code}`);
+      }
+      req.user = user;
+      next();
+    })(req, res, next);
+  },
   async (req, res) => {
     if (req.query.state) {
       return res.redirect(process.env.FRONTEND_URL + '/dashboard/settings?linked=github');

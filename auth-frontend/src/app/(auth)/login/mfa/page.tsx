@@ -4,9 +4,12 @@ import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { REGEXP_ONLY_DIGITS } from "input-otp";
 import { InputOTP, InputOTPGroup, InputOTPSlot, InputOTPSeparator } from "@/components/ui/input-otp";
+import { useAuth } from '@/context/AuthContext';
+import { verifyMfaLogin } from '@/lib/auth-backend-client';
 
 function MfaForm() {
   const router = useRouter();
+  const { completeLogin } = useAuth();
   const searchParams = useSearchParams();
   const tempToken = searchParams.get('token');
   
@@ -22,22 +25,13 @@ function MfaForm() {
 
   const handleVerifyMfa = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!tempToken) return;
     setLoading(true);
     setError('');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/verify-mfa-login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tempToken, code: mfaCode }),
-      });
-      const data = await res.json();
-
-      if (!res.ok) {
-        throw new Error(data.error || 'Invalid MFA code');
-      }
-
-      localStorage.setItem('token', data.token);
+      const data = await verifyMfaLogin(tempToken, mfaCode);
+      await completeLogin(data.token);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message);

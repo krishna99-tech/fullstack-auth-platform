@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { SocialButton } from '@/components/base/buttons/social-button';
-import { socialAuthUrl, getSocialStatus } from '@/lib/authlog-client';
+import { socialAuthUrl, getSocialStatus } from '@/lib/auth-backend-client';
 
 type SocialAuthSectionProps = {
   mode: 'login' | 'signup';
@@ -43,7 +43,7 @@ export function SocialAuthSection({ mode }: SocialAuthSectionProps) {
       </SocialButton>
       {!anyConfigured && (
         <p className="text-xs text-center text-amber-600 dark:text-amber-500">
-          Social login requires OAuth credentials in authlog <code className="text-[11px]">.env</code>
+          Social login requires OAuth credentials in auth-backend <code className="text-[11px]">.env</code>
         </p>
       )}
       <div className="relative my-6">

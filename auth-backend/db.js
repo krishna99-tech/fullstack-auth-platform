@@ -2,13 +2,19 @@ const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, GetCommand, PutCommand, DeleteCommand, QueryCommand, ScanCommand } = require('@aws-sdk/lib-dynamodb');
 const crypto = require('crypto');
 
-const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'us-east-1' });
+// Helper to remove null values which crash DynamoDB Global Secondary Indexes
+const removeNulls = (obj) => {
+  return Object.fromEntries(Object.entries(obj).filter(([_, v]) => v !== null));
+};
+
+const client = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1' });
 const docClient = DynamoDBDocumentClient.from(client);
 
 const USERS_TABLE = process.env.USERS_TABLE || 'auth-users';
 const AUTH_SESSIONS_TABLE = process.env.AUTH_SESSIONS_TABLE || 'auth-user-sessions';
 const AUDIT_LOGS_TABLE = process.env.AUDIT_LOGS_TABLE || 'auth-audit-logs';
 const ANALYTICS_TABLE = process.env.ANALYTICS_TABLE || 'auth-analytics';
+const BLOGS_TABLE = process.env.BLOGS_TABLE || 'auth-blogs';
 
 async function queryByIndex(tableName, indexName, keyName, keyValue) {
   const params = {
@@ -57,17 +63,20 @@ const db = {
         mfaEnabled: false,
         emailNotifications: false,
         accentColor: "59, 130, 246",
+        accentColor: "59, 130, 246",
         ...data 
       };
-      await docClient.send(new PutCommand({ TableName: USERS_TABLE, Item: item }));
-      return item;
+      const cleanItem = removeNulls(item);
+      await docClient.send(new PutCommand({ TableName: USERS_TABLE, Item: cleanItem }));
+      return cleanItem;
     },
     update: async ({ where, data }) => {
       const user = await db.user.findUnique({ where });
       if (!user) throw new Error("User not found");
       const updatedItem = { ...user, ...data };
-      await docClient.send(new PutCommand({ TableName: USERS_TABLE, Item: updatedItem }));
-      return updatedItem;
+      const cleanItem = removeNulls(updatedItem);
+      await docClient.send(new PutCommand({ TableName: USERS_TABLE, Item: cleanItem }));
+      return cleanItem;
     },
     delete: async ({ where }) => {
       const user = await db.user.findUnique({ where });
@@ -206,7 +215,61 @@ const db = {
       }
       return [];
     }
-  }
+  },
+  blog: {
+    findUnique: async ({ where }) => {
+      if (where.id) {
+        const result = await docClient.send(new GetCommand({ TableName: BLOGS_TABLE, Key: { id: where.id } }));
+        return result.Item || null;
+      }
+      if (where.slug) {
+        const items = await queryByIndex(BLOGS_TABLE, 'SlugIndex', 'slug', where.slug);
+        return items.length > 0 ? items[0] : null;
+      }
+      return null;
+    },
+    findMany: async ({ where, orderBy }) => {
+      let items = [];
+      if (where?.authorId) {
+        items = await queryByIndex(BLOGS_TABLE, 'AuthorIdIndex', 'authorId', where.authorId);
+        if (where.status) items = items.filter((item) => item.status === where.status);
+      } else if (where?.status === 'published') {
+        const result = await docClient.send(new ScanCommand({
+          TableName: BLOGS_TABLE,
+          FilterExpression: '#s = :published',
+          ExpressionAttributeNames: { '#s': 'status' },
+          ExpressionAttributeValues: { ':published': 'published' },
+        }));
+        items = result.Items || [];
+      }
+      if (orderBy?.createdAt === 'desc') {
+        items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      }
+      return items;
+    },
+    create: async ({ data }) => {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const item = { id, createdAt: now, updatedAt: now, status: 'draft', ...data };
+      const cleanItem = removeNulls(item);
+      await docClient.send(new PutCommand({ TableName: BLOGS_TABLE, Item: cleanItem }));
+      return cleanItem;
+    },
+    update: async ({ where, data }) => {
+      const post = await db.blog.findUnique({ where });
+      if (!post) throw new Error('Blog post not found');
+      const updatedItem = removeNulls({ ...post, ...data, updatedAt: new Date().toISOString() });
+      await docClient.send(new PutCommand({ TableName: BLOGS_TABLE, Item: updatedItem }));
+      return updatedItem;
+    },
+    delete: async ({ where }) => {
+      const post = await db.blog.findUnique({ where });
+      if (post) {
+        await docClient.send(new DeleteCommand({ TableName: BLOGS_TABLE, Key: { id: post.id } }));
+      }
+    },
+  },
 };
 
+db.docClient = docClient;
 module.exports = db;

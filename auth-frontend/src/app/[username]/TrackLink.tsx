@@ -14,7 +14,7 @@ export default function TrackLink({ username, url, title, className, children }:
     
     // Fire and forget tracking request
     if (LEGACY_API) {
-      fetch(`${LEGACY_API}/analytics/track-click`, {
+      fetch(`${LEGACY_API}/auth/analytics/track-click`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, url, title })

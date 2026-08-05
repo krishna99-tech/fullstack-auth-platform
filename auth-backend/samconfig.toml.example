@@ -1,0 +1,16 @@
+version = 0.1
+
+# Copy to samconfig.toml (gitignored). Stack/region only —
+# secrets and URLs are read from .env by: npm run deploy:env
+
+[default.deploy.parameters]
+stack_name = "auth-backend"
+resolve_s3 = true
+s3_prefix = "auth-backend"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+image_repositories = []
+# parameter_overrides are injected automatically from .env by scripts/sam-deploy-env.js
+
+[default.global.parameters]
+region = "ap-south-1"
