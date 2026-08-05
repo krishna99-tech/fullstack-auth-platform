@@ -3,9 +3,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { 
-  MonitorSmartphone, 
-  ShieldCheck, 
+import {
+  MonitorSmartphone,
+  ShieldCheck,
   ArrowUpRight,
   ChevronRight,
   Copy,
@@ -19,6 +19,11 @@ import {
   Plus,
   LayoutDashboard
 } from 'lucide-react';
+import { useAuth } from '@/context/AuthContext';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { legacyGetProfile, legacyGetSessions, legacyGetProfileStats } from '@/lib/legacy-api';
+import { listAuditEvents } from '@/lib/authlog-client';
+import * as authlog from '@/lib/authlog-client';
 
 interface UserProfile {
   id: string;
@@ -41,6 +46,8 @@ interface Session {
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, getAccessToken } = useAuth();
+  useAuthGuard();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -54,14 +61,7 @@ export default function DashboardPage() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
-    if (urlToken) {
-      localStorage.setItem('token', urlToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
-    }
-
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) {
       router.push('/login');
       return;
@@ -69,38 +69,50 @@ export default function DashboardPage() {
 
     const fetchData = async () => {
       try {
-        const [profileRes, sessionsRes, statsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/analytics/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+        const [legacyProfile, legacySessions, legacyStats, auditData] = await Promise.all([
+          legacyGetProfile(),
+          legacyGetSessions(),
+          legacyGetProfileStats(),
+          listAuditEvents(token, { limit: 5 }).catch(() => ({ events: [] })),
         ]);
 
-        if (profileRes.status === 401 || sessionsRes.status === 401) {
-          localStorage.removeItem('token');
-          router.push('/login?error=session_expired');
-          return;
+        if (legacyProfile) {
+          setProfile(legacyProfile);
+        } else if (user) {
+          setProfile({
+            id: user.sub,
+            email: user.email,
+            username: user.username || null,
+            name: user.name || null,
+            phoneNumber: null,
+            createdAt: new Date().toISOString(),
+            isVerified: user.email_verified,
+            mfaEnabled: user.mfa_enabled,
+          });
         }
 
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          setProfile(data.user || data);
+        if (legacySessions?.length) {
+          setSessions(legacySessions);
+        } else {
+          try {
+            const sessionData = await authlog.listSessions(token);
+            if (sessionData.sessions?.length) {
+              setSessions(sessionData.sessions);
+            }
+          } catch {
+            if (auditData.events?.length) {
+              setSessions(auditData.events.filter((e) => e.action.includes('login')).slice(0, 3).map((e, i) => ({
+                id: e.eventId,
+                device: e.actor?.user_agent || 'Unknown',
+                ipAddress: e.actor?.ip || '—',
+                lastActive: e.timestamp,
+                isCurrent: i === 0,
+              })));
+            }
+          }
         }
 
-        if (sessionsRes.ok) {
-          const data = await sessionsRes.json();
-          setSessions(Array.isArray(data) ? data : (data.sessions || []));
-        }
-
-        if (statsRes.ok) {
-          const pStats = await statsRes.json();
-          setProfileStats(pStats);
-        }
+        if (legacyStats) setProfileStats(legacyStats);
       } catch (err) {
         console.error('Failed to load dashboard data', err);
       } finally {
@@ -109,7 +121,7 @@ export default function DashboardPage() {
     };
 
     fetchData();
-  }, [router]);
+  }, [router, getAccessToken, user]);
 
   const parseUA = (ua: string) => {
     if (!ua) return 'Unknown Device';

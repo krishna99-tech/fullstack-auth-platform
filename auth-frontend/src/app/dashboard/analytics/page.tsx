@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { listAuditEvents, type AuditEvent } from '@/lib/authlog-client';
+import { legacyGetProfileStats, legacyGetSecurityLogs } from '@/lib/legacy-api';
 import { 
   Users, 
   Activity,
@@ -30,8 +33,25 @@ interface AuditLog {
   type: string;
 }
 
+function mapAuditEvent(e: AuditEvent): AuditLog {
+  const outcomeMap: Record<string, string> = {
+    success: 'success',
+    failure: 'danger',
+    pending: 'warning',
+  };
+  return {
+    timestamp: e.timestamp,
+    userId: e.actor?.id || '',
+    event: e.action.replace(/\./g, ' ').replace(/_/g, ' '),
+    ipAddress: e.actor?.ip || '—',
+    location: e.actor?.user_agent?.slice(0, 40) || '—',
+    type: outcomeMap[e.outcome] || 'info',
+  };
+}
+
 export default function AnalyticsPage() {
-  const router = useRouter();
+  const { getAccessToken } = useAuth();
+  useAuthGuard();
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile');
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
@@ -52,33 +72,30 @@ export default function AnalyticsPage() {
   useEffect(() => {
     const fetchLogs = async () => {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
+      const token = getAccessToken();
+      if (!token) return;
+
       try {
-        const [logsRes, statsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/analytics?page=${currentPage}&limit=${limit}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/analytics/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+        const [auditData, legacyLogs, legacyStats] = await Promise.all([
+          listAuditEvents(token, { limit: 50 }),
+          legacyGetSecurityLogs(currentPage, limit),
+          legacyGetProfileStats(),
         ]);
-        if (logsRes.ok) {
-          const data = await logsRes.json();
-          setLogs(data.logs || []);
-          if (data.stats) {
-            setStats(data.stats);
-          }
-          if (data.pagination) {
-            setTotalPages(data.pagination.totalPages || 1);
-          }
-        }
-        if (statsRes.ok) {
-          const pStats = await statsRes.json();
-          setProfileStats(pStats);
+
+        const mapped = auditData.events.map(mapAuditEvent);
+        setLogs(mapped);
+        setStats({
+          totalLogins: mapped.filter((l) => l.event.includes('login success')).length,
+          failedLogins: mapped.filter((l) => l.event.includes('login failure')).length,
+          passwordChanges: mapped.filter((l) => l.event.includes('password')).length,
+        });
+        setTotalPages(Math.max(1, Math.ceil(mapped.length / limit)));
+
+        if (legacyStats) setProfileStats(legacyStats);
+        if (legacyLogs?.logs?.length && mapped.length === 0) {
+          setLogs(legacyLogs.logs);
+          if (legacyLogs.stats) setStats(legacyLogs.stats);
+          if (legacyLogs.pagination) setTotalPages(legacyLogs.pagination.totalPages || 1);
         }
       } catch (err) {
         console.error('Failed to load analytics', err);
@@ -87,7 +104,7 @@ export default function AnalyticsPage() {
       }
     };
     fetchLogs();
-  }, [router, currentPage]);
+  }, [getAccessToken, currentPage]);
 
   const getIconForEvent = (event: string, type: string) => {
     if (event.toLowerCase().includes('login')) return type === 'success' ? ArrowUpRight : ShieldAlert;

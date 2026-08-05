@@ -10,17 +10,15 @@ import {
   Settings,
   ShieldCheck,
   LogOut,
-  User,
-  Moon,
-  Sun,
   Loader2,
   FolderPlus,
   Users,
   FileText,
   Webhook,
-  Building2
+  Building2,
+  ScrollText,
 } from 'lucide-react';
-
+import { useAuth } from '@/context/AuthContext';
 import {
   Sidebar,
   SidebarContent,
@@ -34,36 +32,14 @@ import {
 } from "@/components/ui/sidebar";
 
 const navItems = [
-  {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: LayoutDashboard,
-  },
-  {
-    label: "Projects",
-    href: "/dashboard/projects",
-    icon: FolderPlus,
-  },
-  {
-    label: "Organization",
-    href: "/dashboard/organization",
-    icon: Building2,
-  },
-  {
-    label: "Blogs",
-    href: "/dashboard/blogs",
-    icon: FileText,
-  },
-  {
-    label: "APIs",
-    href: "/dashboard/apis",
-    icon: Webhook,
-  },
-  {
-    label: "Analytics",
-    href: "/dashboard/analytics",
-    icon: TrendingUp,
-  },
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Users", href: "/dashboard/users", icon: Users, adminOnly: true },
+  { label: "Audit Log", href: "/dashboard/audit", icon: ScrollText },
+  { label: "Projects", href: "/dashboard/projects", icon: FolderPlus },
+  { label: "Organization", href: "/dashboard/organization", icon: Building2, adminOnly: true },
+  { label: "Blogs", href: "/dashboard/blogs", icon: FileText },
+  { label: "APIs", href: "/dashboard/apis", icon: Webhook },
+  { label: "Analytics", href: "/dashboard/analytics", icon: TrendingUp },
 ];
 
 const footerItems = [
@@ -73,33 +49,21 @@ const footerItems = [
 export default function AppSidebar() {
   const router = useRouter();
   const pathname = usePathname();
-  const [profile, setProfile] = useState<{ email: string; id: string } | null>(null);
+  const { user, logout, isAdmin } = useAuth();
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    const token = localStorage.getItem('token');
-    if (token) {
-      fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-        .then(res => res.ok ? res.json() : null)
-        .then(data => {
-          if (data) setProfile(data);
-        })
-        .catch(console.error);
-    }
   }, []);
 
   const handleLogout = () => {
     setIsLoggingOut(true);
-    setTimeout(() => {
-      localStorage.removeItem('token');
-      router.push('/login');
-    }, 600);
+    setTimeout(() => logout(), 300);
   };
+
+  const visibleNav = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   return (
     <Sidebar variant="sidebar" collapsible="icon">
@@ -108,22 +72,20 @@ export default function AppSidebar() {
           <ShieldCheck className="w-5 h-5" />
         </div>
       </SidebarHeader>
-      
+
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupContent>
             <SidebarMenu>
-              {navItems.map((item) => {
+              {visibleNav.map((item) => {
                 const isActive = pathname === item.href || (item.href !== '/dashboard' && pathname.startsWith(item.href));
                 const Icon = item.icon;
                 return (
                   <SidebarMenuItem key={item.label}>
-                    <Link href={item.href} className="w-full block">
-                      <SidebarMenuButton render={<div />} isActive={isActive} tooltip={item.label} className="w-full cursor-pointer">
-                        <Icon />
-                        <span>{item.label}</span>
-                      </SidebarMenuButton>
-                    </Link>
+                    <SidebarMenuButton isActive={isActive} render={<Link href={item.href} />}>
+                      <Icon className="w-4 h-4" />
+                      <span>{item.label}</span>
+                    </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
               })}
@@ -134,48 +96,27 @@ export default function AppSidebar() {
 
       <SidebarFooter>
         <SidebarMenu>
+          {footerItems.map((item) => (
+            <SidebarMenuItem key={item.label}>
+              <SidebarMenuButton render={<Link href={item.href} />}>
+                <item.icon className="w-4 h-4" />
+                <span>{item.label}</span>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          ))}
           {mounted && (
             <SidebarMenuItem>
-              <SidebarMenuButton 
-                onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
-                tooltip="Toggle Theme"
-              >
-                {theme === "dark" ? <Sun /> : <Moon />}
-                <span>Toggle Theme</span>
+              <SidebarMenuButton onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}>
+                <span className="text-xs">{theme === 'dark' ? 'Light mode' : 'Dark mode'}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>
           )}
-
-          {footerItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            const Icon = item.icon;
-            return (
-              <SidebarMenuItem key={item.label}>
-                <Link href={item.href} className="w-full block">
-                  <SidebarMenuButton render={<div />} isActive={isActive} tooltip={item.label} className="w-full cursor-pointer">
-                    <Icon />
-                    <span>{item.label}</span>
-                  </SidebarMenuButton>
-                </Link>
-              </SidebarMenuItem>
-            );
-          })}
-          
           <SidebarMenuItem>
-            <SidebarMenuButton onClick={handleLogout} tooltip="Sign Out" className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950">
-              {isLoggingOut ? <Loader2 className="animate-spin" /> : <LogOut />}
-              <span>{isLoggingOut ? 'Signing out...' : 'Sign Out'}</span>
+            <SidebarMenuButton onClick={handleLogout} disabled={isLoggingOut}>
+              {isLoggingOut ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogOut className="w-4 h-4" />}
+              <span>{user?.email || 'Sign out'}</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
-
-          {profile && (
-            <SidebarMenuItem className="mt-4 border-t pt-4">
-              <SidebarMenuButton tooltip={profile.email}>
-                <User />
-                <span className="truncate">{profile.email.split('@')[0]}</span>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )}
         </SidebarMenu>
       </SidebarFooter>
     </Sidebar>

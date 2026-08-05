@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
+import { useAuth } from "@/context/AuthContext";
 
 interface Position {
   x: number;
@@ -32,6 +33,7 @@ export function GlobalContextMenu() {
   const router = useRouter();
   const pathname = usePathname();
   const { theme, setTheme } = useTheme();
+  const { logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [position, setPosition] = useState<Position>({ x: 0, y: 0 });
@@ -215,8 +217,7 @@ export function GlobalContextMenu() {
             label={isSigningOut ? "Signing out..." : "Sign Out"}
             onClick={() => {
               setIsSigningOut(true);
-              localStorage.removeItem("token");
-              router.push("/login");
+              logout();
             }}
             danger
             disabled={isSigningOut}

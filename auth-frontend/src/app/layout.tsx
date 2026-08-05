@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/context/AuthContext";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { GlobalContextMenu } from "@/components/GlobalContextMenu";
 import NextTopLoader from "nextjs-toploader";
@@ -41,11 +42,13 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <TooltipProvider>
-            <NextTopLoader color="#7e56db" showSpinner={false} height={3} />
-            <GlobalContextMenu />
-            {children}
-          </TooltipProvider>
+          <AuthProvider>
+            <TooltipProvider>
+              <NextTopLoader color="#7e56db" showSpinner={false} height={3} />
+              <GlobalContextMenu />
+              {children}
+            </TooltipProvider>
+          </AuthProvider>
         </ThemeProvider>
 
         {/* Service Worker Registration */}

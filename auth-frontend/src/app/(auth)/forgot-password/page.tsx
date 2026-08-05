@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { LEGACY_API } from '@/lib/config';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -11,12 +12,17 @@ export default function ForgotPassword() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!LEGACY_API) {
+      setError('Password reset is not yet available on authlog. Coming in Phase 1.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setMessage('');
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/forgot-password`, {
+      const res = await fetch(`${LEGACY_API}/auth/forgot-password`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email }),
@@ -29,8 +35,8 @@ export default function ForgotPassword() {
 
       setMessage(data.message);
       setEmail('');
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Request failed');
     } finally {
       setLoading(false);
     }
@@ -42,13 +48,19 @@ export default function ForgotPassword() {
       <p className="text-gray-600 dark:text-gray-400 mb-8">
         Enter your email and we&apos;ll send you a reset link
       </p>
-      
+
+      {!LEGACY_API && (
+        <div className="bg-amber-500/10 border border-amber-500 text-amber-700 dark:text-amber-400 p-3 rounded mb-4 text-sm">
+          Password reset via authlog is planned for Phase 1. Configure NEXT_PUBLIC_LEGACY_API_URL for the legacy backend.
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-500/10 border border-red-500 text-red-500 p-3 rounded mb-4 text-sm">
           {error}
         </div>
       )}
-      
+
       {message && (
         <div className="bg-green-500/10 border border-green-500 text-green-500 p-3 rounded mb-4 text-sm">
           {message}
@@ -70,7 +82,7 @@ export default function ForgotPassword() {
               required
             />
           </div>
-          
+
           <button type="submit" className="btn-primary w-full mt-6" disabled={loading}>
             {loading ? 'Sending link...' : 'Send Reset Link'}
           </button>

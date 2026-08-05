@@ -2,6 +2,21 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
+import { useAuthGuard } from '@/hooks/use-auth-guard';
+import { tokens } from '@/lib/token-store';
+import { legacyGetProfile, legacyGetSessions, hasLegacyApi } from '@/lib/legacy-api';
+import { LEGACY_API } from '@/lib/config';
+import {
+  setupMfa,
+  verifyMfa,
+  disableMfa,
+  listSessions,
+  revokeSession,
+  revokeOtherSessions,
+  socialAuthUrl,
+  getSocialStatus,
+} from '@/lib/authlog-client';
 import { RefreshCcw, Monitor, AlertTriangle } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
@@ -14,6 +29,8 @@ interface UserProfile {
   createdAt: string;
   isVerified: boolean;
   mfaEnabled?: boolean;
+  googleConnected?: boolean;
+  githubConnected?: boolean;
   emailNotifications?: boolean;
   isProfilePublic?: boolean;
   bio?: string;
@@ -86,6 +103,8 @@ const SettingCard = ({
 
 export default function SettingsPage() {
   const router = useRouter();
+  const { user: authUser, getAccessToken } = useAuth();
+  useAuthGuard();
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -136,6 +155,10 @@ export default function SettingsPage() {
   const [mfaSetupData, setMfaSetupData] = useState<{qrCodeUrl: string, secret: string} | null>(null);
   const [mfaVerifyCode, setMfaVerifyCode] = useState('');
   const [isVerifyingMfa, setIsVerifyingMfa] = useState(false);
+  const [mfaDisableCode, setMfaDisableCode] = useState('');
+  const [mfaDisablePassword, setMfaDisablePassword] = useState('');
+  const [showMfaDisable, setShowMfaDisable] = useState(false);
+  const [socialProviders, setSocialProviders] = useState({ google: false, github: false });
 
   // Sessions
   const [revokingSessionId, setRevokingSessionId] = useState<string | null>(null);
@@ -146,7 +169,7 @@ export default function SettingsPage() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     if (!token) {
       router.push('/login');
       return;
@@ -154,24 +177,53 @@ export default function SettingsPage() {
 
     const fetchData = async () => {
       try {
-        const [profileRes, sessionsRes] = await Promise.all([
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          }),
-          fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          })
+        if (authUser) {
+          setProfile({
+            id: authUser.sub,
+            email: authUser.email,
+            username: authUser.username || null,
+            name: authUser.name || null,
+            phoneNumber: null,
+            createdAt: new Date().toISOString(),
+            isVerified: authUser.email_verified,
+            mfaEnabled: authUser.mfa_enabled,
+            googleConnected: authUser.google_connected,
+            githubConnected: authUser.github_connected,
+          });
+          setEditName(authUser.name || '');
+          setEditEmail(authUser.email || '');
+          setEditUsername(authUser.username || '');
+        }
+
+        const accessToken = getAccessToken();
+        if (accessToken) {
+          try {
+            const sessionData = await listSessions(accessToken);
+            setSessions(sessionData.sessions);
+          } catch {
+            /* sessions optional */
+          }
+        }
+
+        getSocialStatus().then(setSocialProviders).catch(() => {});
+
+        if (!hasLegacyApi()) {
+          setLoading(false);
+          return;
+        }
+
+        const [legacyProfile, legacySessions] = await Promise.all([
+          legacyGetProfile(),
+          legacyGetSessions(),
         ]);
 
-        if (profileRes.status === 401 || sessionsRes.status === 401) {
-          localStorage.removeItem('token');
+        if (!legacyProfile && !authUser) {
           router.push('/login?error=session_expired');
           return;
         }
 
-        if (profileRes.ok) {
-          const data = await profileRes.json();
-          const user = data.user || data;
+        if (legacyProfile) {
+          const user = legacyProfile;
           setProfile(user);
           setEditName(user.name || '');
           setEditUsername(user.username || '');
@@ -180,19 +232,12 @@ export default function SettingsPage() {
           setEditLocation(user.location || '');
           setEditWebsite(user.website || '');
           setEditTheme(user.theme || 'default');
-          if (user.socialLinks) {
-            setEditSocials({
-              github: user.socialLinks.github || '',
-              twitter: user.socialLinks.twitter || '',
-              linkedin: user.socialLinks.linkedin || ''
-            });
-          }
+          setEditSocials(user.socialLinks || { github: '', twitter: '', linkedin: '' });
           setCustomLinks(user.customLinks || []);
         }
 
-        if (sessionsRes.ok) {
-          const data = await sessionsRes.json();
-          setSessions(Array.isArray(data) ? data : (data.sessions || []));
+        if (legacySessions) {
+          setSessions(legacySessions);
         }
       } catch (err) {
         console.error('Failed to load settings data', err);
@@ -202,7 +247,7 @@ export default function SettingsPage() {
     };
 
     fetchData();
-  }, [router]);
+  }, [router, authUser, getAccessToken]);
 
   const showMessage = (field: string, type: 'error' | 'success', text: string) => {
     setMessages(prev => ({ ...prev, [field]: { type, text } }));
@@ -217,9 +262,9 @@ export default function SettingsPage() {
 
   const handleResendVerification = async () => {
     setIsResending(true);
-    const token = localStorage.getItem('token');
+    const token = getAccessToken();
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/resend-verification`, {
+      const res = await fetch(`${LEGACY_API}/auth/resend-verification`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -238,7 +283,7 @@ export default function SettingsPage() {
   const handleUpdateField = async (field: string, value: any, setLoadingState: (state: boolean) => void) => {
     setLoadingState(true);
     try {
-      const token = localStorage.getItem('token');
+      const token = getAccessToken();
       const payload = {
         name: profile?.name || '',
         username: profile?.username || '',
@@ -247,7 +292,7 @@ export default function SettingsPage() {
         [field]: value
       };
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
+      const res = await fetch(`${LEGACY_API}/auth/profile`, {
         method: 'PUT',
         headers: { 
           'Authorization': `Bearer ${token}`,
@@ -275,8 +320,8 @@ export default function SettingsPage() {
     }
     setIsChangingPwd(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/change-password`, {
+      const token = getAccessToken();
+      const res = await fetch(`${LEGACY_API}/auth/change-password`, {
         method: 'POST',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ currentPassword, newPassword })
@@ -296,67 +341,54 @@ export default function SettingsPage() {
   };
 
   const handleToggleMfa = async (enable: boolean) => {
+    const token = getAccessToken();
+    if (!token) return;
+
     if (enable) {
       setIsTogglingMfa(true);
       try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/mfa/setup`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to initiate MFA setup');
-
+        const data = await setupMfa(token);
         setMfaSetupData({ qrCodeUrl: data.qrCodeUrl, secret: data.secret });
-      } catch (err: any) {
-        showMessage('mfa', 'error', err.message);
+      } catch (err: unknown) {
+        showMessage('mfa', 'error', err instanceof Error ? err.message : 'Failed to initiate MFA setup');
       } finally {
         setIsTogglingMfa(false);
       }
     } else {
-      setIsTogglingMfa(true);
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/mfa/disable`, {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!res.ok) {
-          const data = await res.json();
-          throw new Error(data.error || 'Failed to disable MFA');
-        }
+      setShowMfaDisable(true);
+    }
+  };
 
-        setProfile(prev => prev ? { ...prev, mfaEnabled: false } : null);
-        showMessage('mfa', 'success', `Two-factor authentication disabled.`);
-      } catch (err: any) {
-        showMessage('mfa', 'error', err.message);
-      } finally {
-        setIsTogglingMfa(false);
-      }
+  const handleConfirmDisableMfa = async () => {
+    const token = getAccessToken();
+    if (!token) return;
+    setIsTogglingMfa(true);
+    try {
+      await disableMfa(token, mfaDisableCode, mfaDisablePassword);
+      setProfile((prev) => (prev ? { ...prev, mfaEnabled: false } : null));
+      setShowMfaDisable(false);
+      setMfaDisableCode('');
+      setMfaDisablePassword('');
+      showMessage('mfa', 'success', 'Two-factor authentication disabled.');
+    } catch (err: unknown) {
+      showMessage('mfa', 'error', err instanceof Error ? err.message : 'Failed to disable MFA');
+    } finally {
+      setIsTogglingMfa(false);
     }
   };
 
   const handleVerifyMfa = async () => {
+    const token = getAccessToken();
+    if (!token) return;
     setIsVerifyingMfa(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/mfa/verify`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: mfaVerifyCode })
-      });
-      
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to verify MFA');
-
-      setProfile(prev => prev ? { ...prev, mfaEnabled: true } : null);
+      await verifyMfa(token, mfaVerifyCode);
+      setProfile((prev) => (prev ? { ...prev, mfaEnabled: true } : null));
       setMfaSetupData(null);
       setMfaVerifyCode('');
-      showMessage('mfa', 'success', `Two-factor authentication enabled successfully.`);
-    } catch (err: any) {
-      showMessage('mfa', 'error', err.message);
+      showMessage('mfa', 'success', 'Two-factor authentication enabled successfully.');
+    } catch (err: unknown) {
+      showMessage('mfa', 'error', err instanceof Error ? err.message : 'Failed to verify MFA');
     } finally {
       setIsVerifyingMfa(false);
     }
@@ -365,8 +397,8 @@ export default function SettingsPage() {
   const handleToggleNotifications = async (enable: boolean) => {
     setIsTogglingNotifications(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/preferences`, {
+      const token = getAccessToken();
+      const res = await fetch(`${LEGACY_API}/auth/preferences`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ emailNotifications: enable })
@@ -385,8 +417,8 @@ export default function SettingsPage() {
   const handleToggleProfilePublic = async (enable: boolean) => {
     setIsTogglingProfilePublic(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/preferences`, {
+      const token = getAccessToken();
+      const res = await fetch(`${LEGACY_API}/auth/preferences`, {
         method: 'PATCH',
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({ isProfilePublic: enable })
@@ -405,13 +437,17 @@ export default function SettingsPage() {
   const handleRevokeSession = async (sessionId: string) => {
     setRevokingSessionId(sessionId);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions/${sessionId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setSessions(prev => prev.filter(s => s.id !== sessionId));
+      const token = getAccessToken();
+      if (!token) return;
+      if (hasLegacyApi()) {
+        const res = await fetch(`${LEGACY_API}/auth/sessions/${sessionId}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setSessions((prev) => prev.filter((s) => s.id !== sessionId));
+      } else {
+        await revokeSession(token, sessionId);
+        setSessions((prev) => prev.filter((s) => s.id !== sessionId));
       }
     } catch (err) {
       console.error(err);
@@ -423,13 +459,17 @@ export default function SettingsPage() {
   const handleRevokeAllOtherSessions = async () => {
     setIsRevokingAll(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/sessions`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      if (res.ok) {
-        setSessions(prev => prev.filter(s => s.isCurrent));
+      const token = getAccessToken();
+      if (!token) return;
+      if (hasLegacyApi()) {
+        const res = await fetch(`${LEGACY_API}/auth/sessions`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) setSessions((prev) => prev.filter((s) => s.isCurrent));
+      } else {
+        await revokeOtherSessions(token);
+        setSessions((prev) => prev.filter((s) => s.isCurrent));
       }
     } catch (err) {
       console.error(err);
@@ -444,13 +484,13 @@ export default function SettingsPage() {
     }
     setIsDeleting(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
+      const token = getAccessToken();
+      const res = await fetch(`${LEGACY_API}/auth/me`, {
         method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (res.ok) {
-        localStorage.removeItem('token');
+        tokens.clear();
         router.push('/login?deleted=true');
       } else {
         const data = await res.json();
@@ -897,6 +937,35 @@ export default function SettingsPage() {
                 </form>
               </div>
 
+              {(socialProviders.google || socialProviders.github) && (
+                <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
+                  <h3 className="text-[16px] font-semibold text-black dark:text-white">Connected accounts</h3>
+                  <p className="text-[14px] text-[#666] mt-1 mb-4">Link Google or GitHub for one-click sign-in.</p>
+                  <div className="space-y-3 max-w-md">
+                    {socialProviders.google && (
+                      <div className="flex items-center justify-between py-2 border-b border-zinc-100 dark:border-[#222]">
+                        <span className="text-sm">Google</span>
+                        {profile?.googleConnected ? (
+                          <span className="text-xs text-emerald-600">Connected</span>
+                        ) : (
+                          <a href={socialAuthUrl('google', getAccessToken() || undefined)} className="text-xs font-medium underline">Connect</a>
+                        )}
+                      </div>
+                    )}
+                    {socialProviders.github && (
+                      <div className="flex items-center justify-between py-2">
+                        <span className="text-sm">GitHub</span>
+                        {profile?.githubConnected ? (
+                          <span className="text-xs text-emerald-600">Connected</span>
+                        ) : (
+                          <a href={socialAuthUrl('github', getAccessToken() || undefined)} className="text-xs font-medium underline">Connect</a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -942,6 +1011,18 @@ export default function SettingsPage() {
                         {isVerifyingMfa ? <RefreshCcw className="w-3.5 h-3.5 mr-2 animate-spin" /> : null}
                         Verify
                       </button>
+                    </div>
+                  </div>
+                )}
+                
+                {showMfaDisable && profile?.mfaEnabled && (
+                  <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-[#333] space-y-3 max-w-[320px]">
+                    <p className="text-[14px] text-[#666]">Enter your password and current MFA code to disable.</p>
+                    <input type="password" placeholder="Password" className="w-full px-3 py-2 border border-zinc-300 dark:border-[#333] rounded-md text-sm bg-transparent" value={mfaDisablePassword} onChange={(e) => setMfaDisablePassword(e.target.value)} />
+                    <input type="text" maxLength={6} placeholder="MFA code" className="w-full px-3 py-2 border border-zinc-300 dark:border-[#333] rounded-md text-sm font-mono bg-transparent" value={mfaDisableCode} onChange={(e) => setMfaDisableCode(e.target.value.replace(/\D/g, ''))} />
+                    <div className="flex gap-2">
+                      <button type="button" onClick={handleConfirmDisableMfa} disabled={isTogglingMfa} className="px-4 py-2 bg-red-600 text-white rounded-md text-sm">Disable MFA</button>
+                      <button type="button" onClick={() => setShowMfaDisable(false)} className="px-4 py-2 text-sm">Cancel</button>
                     </div>
                   </div>
                 )}

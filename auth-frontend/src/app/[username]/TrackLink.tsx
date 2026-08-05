@@ -1,5 +1,4 @@
-"use client";
-import React from 'react';
+import { LEGACY_API } from '@/lib/config';
 
 interface TrackLinkProps {
   username: string;
@@ -14,11 +13,13 @@ export default function TrackLink({ username, url, title, className, children }:
     e.preventDefault();
     
     // Fire and forget tracking request
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/track-click`, {
+    if (LEGACY_API) {
+      fetch(`${LEGACY_API}/analytics/track-click`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, url, title })
-    }).catch(console.error);
+      }).catch(console.error);
+    }
 
     // Open link immediately for good UX
     window.open(url.startsWith('http') ? url : `https://${url}`, '_blank');

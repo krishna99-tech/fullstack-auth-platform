@@ -1,9 +1,11 @@
 "use client";
 import { useEffect } from 'react';
+import { LEGACY_API } from '@/lib/config';
 
 export default function TrackView({ username }: { username: string }) {
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/analytics/track-view`, {
+    if (!LEGACY_API) return;
+    fetch(`${LEGACY_API}/analytics/track-view`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username })

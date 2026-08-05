@@ -2,17 +2,16 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { 
-  LayoutDashboard, 
-  Users, 
-  Settings, 
-  LogOut, 
-  Menu, 
-  Search, 
+import { usePathname, useRouter } from 'next/navigation';
+import {
+  LayoutDashboard,
+  Users,
+  Settings,
+  LogOut,
+  Menu,
+  Search,
   ChevronsUpDown,
   Command,
-  ShieldAlert,
   Bell,
   Code,
   Sun,
@@ -20,11 +19,14 @@ import {
   FolderPlus,
   FileText,
   Webhook,
-  Building2
+  Building2,
+  ScrollText,
+  Shield,
 } from 'lucide-react';
 import { useTheme } from 'next-themes';
 import { motion, AnimatePresence } from 'motion/react';
 import { cn } from "@/lib/utils";
+import { useAuth } from '@/context/AuthContext';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -34,63 +36,44 @@ import {
   DropdownMenuTrigger,
   DropdownMenuGroup
 } from "@/components/ui/dropdown-menu";
+import { TENANT_SLUG } from '@/lib/config';
+import { tokens } from '@/lib/token-store';
 
 const navItems = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'Users', href: '/dashboard/users', icon: Users, adminOnly: true },
+  { name: 'Audit Log', href: '/dashboard/audit', icon: ScrollText },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderPlus },
-  { name: 'Organization', href: '/dashboard/organization', icon: Building2 },
+  { name: 'Organization', href: '/dashboard/organization', icon: Building2, adminOnly: true },
   { name: 'Blogs', href: '/dashboard/blogs', icon: FileText },
-  { name: 'APIs', href: '/dashboard/apis', icon: Webhook },
-  { name: 'Analytics', href: '/dashboard/analytics', icon: Users },
+  { name: 'APIs', href: '/dashboard/apis', icon: Webhook, adminOnly: true },
+  { name: 'Analytics', href: '/dashboard/analytics', icon: Shield },
   { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+  const { user, loading, logout, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [userEmail, setUserEmail] = useState<string>('user@acme.com');
-  const [userName, setUserName] = useState<string>('User');
   const { theme, setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    
-    const params = new URLSearchParams(window.location.search);
-    const urlToken = params.get('token');
-    if (urlToken) {
-      localStorage.setItem('token', urlToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
+    if (!loading && !user && !tokens.hasSession()) {
+      router.push('/login');
     }
+  }, [loading, user, router]);
 
-    const fetchUser = async () => {
-      const token = localStorage.getItem('token');
-      if (token) {
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (res.ok) {
-            const data = await res.json();
-            const user = data.user || data;
-            setUserEmail(user.email || 'user@acme.com');
-            setUserName(user.name || user.username || 'User');
-          }
-        } catch(e) {}
-      }
-    };
-    fetchUser();
-  }, []);
+  const userEmail = user?.email || 'user@example.com';
+  const userName = user?.name || user?.email?.split('@')[0] || 'User';
 
-  const handleLogout = () => {
-    localStorage.removeItem('token'); 
-    window.location.href = '/login';
-  }
+  const visibleNav = navItems.filter((item) => !item.adminOnly || isAdmin);
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
     <div className="flex flex-col h-full bg-white dark:bg-[#000000]">
-      {/* Project Switcher */}
       <div className="px-4 py-4 md:py-6 flex items-center justify-between">
         <button className="flex-1 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-[#111] p-2 rounded-lg transition-colors border border-transparent">
           <div className="flex items-center gap-3 overflow-hidden">
@@ -98,22 +81,24 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Code className="w-4 h-4" />
             </div>
             <div className="flex flex-col items-start truncate">
-              <span className="text-sm font-semibold text-black dark:text-white truncate">Platform Inc</span>
-              <span className="text-xs text-zinc-500 dark:text-[#888] truncate font-medium">Developer</span>
+              <span className="text-sm font-semibold text-black dark:text-white truncate capitalize">{TENANT_SLUG}</span>
+              <span className="text-xs text-zinc-500 dark:text-[#888] truncate font-medium">
+                {user?.roles?.join(', ') || 'Member'}
+              </span>
             </div>
           </div>
           <ChevronsUpDown className="w-4 h-4 text-zinc-400 shrink-0" />
         </button>
         {isMobile ? (
-          <button 
-            onClick={() => setMobileMenuOpen(false)} 
+          <button
+            onClick={() => setMobileMenuOpen(false)}
             className="lg:hidden p-2 ml-2 text-zinc-500 hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
           </button>
         ) : (
-          <button 
-            onClick={() => setDesktopSidebarOpen(false)} 
+          <button
+            onClick={() => setDesktopSidebarOpen(false)}
             className="hidden lg:flex p-2 ml-2 text-zinc-500 hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors"
             title="Collapse Sidebar"
           >
@@ -122,10 +107,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </div>
 
-      {/* Navigation */}
       <div className="flex-1 px-4 py-2">
         <nav className="space-y-1">
-          {navItems.map((item) => {
+          {visibleNav.map((item) => {
             const isActive = pathname === item.href || (pathname.startsWith(item.href) && item.href !== '/dashboard');
             return (
               <Link
@@ -134,8 +118,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 onClick={() => isMobile && setMobileMenuOpen(false)}
                 className={cn(
                   "flex items-center px-3 py-2 text-[14px] rounded-md transition-all duration-200 group",
-                  isActive 
-                    ? "bg-zinc-100/80 dark:bg-[#111] text-black dark:text-white font-medium" 
+                  isActive
+                    ? "bg-zinc-100/80 dark:bg-[#111] text-black dark:text-white font-medium"
                     : "text-zinc-600 dark:text-[#888] hover:bg-zinc-100/50 dark:hover:bg-[#111]/50 hover:text-black dark:hover:text-white"
                 )}
               >
@@ -149,15 +133,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           })}
         </nav>
       </div>
-
-
     </div>
   );
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+        <div className="w-5 h-5 border-2 border-zinc-200 dark:border-[#333] border-t-black dark:border-t-white rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-white dark:bg-[#000000] text-black dark:text-white flex font-sans selection:bg-cyan-300 selection:text-cyan-900 dark:selection:bg-cyan-900 dark:selection:text-cyan-50">
-      
-      {/* Mobile Sidebar Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -181,12 +169,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         )}
       </AnimatePresence>
 
-      {/* Desktop Sidebar */}
-      <motion.div 
+      <motion.div
         initial={false}
-        animate={{ 
-          width: desktopSidebarOpen ? 260 : 0, 
-          opacity: desktopSidebarOpen ? 1 : 0 
+        animate={{
+          width: desktopSidebarOpen ? 260 : 0,
+          opacity: desktopSidebarOpen ? 1 : 0
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
         className="hidden lg:flex flex-col border-r border-zinc-200 dark:border-[#333] shrink-0 bg-white dark:bg-[#000] overflow-hidden"
@@ -196,18 +183,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </div>
       </motion.div>
 
-      {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[#FAFAFA] dark:bg-[#000]">
-        
-        {/* Header - Shared between mobile & desktop for consistency */}
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] shrink-0">
           <div className="flex items-center gap-3">
             <button onClick={() => setMobileMenuOpen(true)} className="lg:hidden p-1 -ml-1 text-zinc-500 hover:text-black dark:hover:text-white">
               <Menu className="w-5 h-5" />
             </button>
             {!desktopSidebarOpen && (
-              <button 
-                onClick={() => setDesktopSidebarOpen(true)} 
+              <button
+                onClick={() => setDesktopSidebarOpen(true)}
                 className="hidden lg:flex p-1 -ml-2 text-zinc-500 hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors"
                 title="Expand Sidebar"
               >
@@ -215,7 +199,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </button>
             )}
             <nav className="flex text-sm font-medium text-zinc-500 dark:text-[#888] items-center">
-              <span className="hover:text-black dark:hover:text-white cursor-pointer transition-colors">Platform Inc</span>
+              <span className="hover:text-black dark:hover:text-white cursor-pointer transition-colors capitalize">{TENANT_SLUG}</span>
               <span className="mx-2 text-zinc-300 dark:text-[#333]">/</span>
               <span className="text-black dark:text-white">
                 {pathname.split('/').pop() === 'dashboard' ? 'Overview' : (pathname.split('/').pop() || '').charAt(0).toUpperCase() + (pathname.split('/').pop() || '').slice(1)}
@@ -223,31 +207,31 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
           <div className="flex items-center gap-4">
-             <div className="hidden sm:flex relative group items-center">
-                <Search className="w-4 h-4 text-zinc-400 absolute left-3" />
-                <input
-                  type="text"
-                  className="w-64 pl-9 pr-12 py-1.5 bg-zinc-100 dark:bg-[#111] border border-transparent dark:border-[#333] rounded-md text-sm text-black dark:text-white placeholder-zinc-500 dark:placeholder-[#666] focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
-                  placeholder="Search..."
-                />
-                <div className="absolute right-2 flex items-center gap-1 border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded px-1.5 py-0.5">
-                  <Command className="w-3 h-3 text-zinc-400 dark:text-[#666]" />
-                  <span className="text-[10px] font-medium text-zinc-400 dark:text-[#666]">K</span>
-                </div>
-             </div>
-             {mounted && (
-                <button 
-                  onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
-                  className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent"
-                  title="Toggle Theme"
-                >
-                  {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                </button>
-              )}
-             <button className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent">
+            <div className="hidden sm:flex relative group items-center">
+              <Search className="w-4 h-4 text-zinc-400 absolute left-3" />
+              <input
+                type="text"
+                className="w-64 pl-9 pr-12 py-1.5 bg-zinc-100 dark:bg-[#111] border border-transparent dark:border-[#333] rounded-md text-sm text-black dark:text-white placeholder-zinc-500 dark:placeholder-[#666] focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all"
+                placeholder="Search..."
+              />
+              <div className="absolute right-2 flex items-center gap-1 border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded px-1.5 py-0.5">
+                <Command className="w-3 h-3 text-zinc-400 dark:text-[#666]" />
+                <span className="text-[10px] font-medium text-zinc-400 dark:text-[#666]">K</span>
+              </div>
+            </div>
+            {mounted && (
+              <button
+                onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}
+                className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent"
+                title="Toggle Theme"
+              >
+                {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+            )}
+            <button className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent">
               <Bell className="w-4 h-4" />
-             </button>
-             <DropdownMenu>
+            </button>
+            <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none ml-2">
                 <div className="w-8 h-8 rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-tr from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-800 flex items-center justify-center text-sm font-semibold text-black dark:text-white shrink-0 hover:ring-2 hover:ring-zinc-300 dark:hover:ring-zinc-700 transition-all">
                   {userEmail.charAt(0).toUpperCase()}
@@ -258,9 +242,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <DropdownMenuLabel className="font-normal">
                     <div className="flex flex-col space-y-1">
                       <p className="text-sm font-medium leading-none text-black dark:text-white">{userName}</p>
-                      <p className="text-xs leading-none text-zinc-500 dark:text-[#888]">
-                        {userEmail}
-                      </p>
+                      <p className="text-xs leading-none text-zinc-500 dark:text-[#888]">{userEmail}</p>
                     </div>
                   </DropdownMenuLabel>
                 </DropdownMenuGroup>
@@ -269,16 +251,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-[#111] focus:bg-zinc-100 dark:focus:bg-[#111] text-red-600 dark:text-red-500">
+                <DropdownMenuItem onClick={() => logout()} className="cursor-pointer hover:bg-zinc-100 dark:hover:bg-[#111] focus:bg-zinc-100 dark:focus:bg-[#111] text-red-600 dark:text-red-500">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-             </DropdownMenu>
-           </div>
+            </DropdownMenu>
+          </div>
         </header>
 
-        {/* Page Content */}
         <main className="flex-1 overflow-y-auto">
           <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
             <motion.div
@@ -292,7 +273,6 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
         </main>
       </div>
-
     </div>
   );
 }

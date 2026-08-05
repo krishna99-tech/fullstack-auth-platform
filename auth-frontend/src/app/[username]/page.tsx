@@ -3,6 +3,8 @@ import { CalendarDays, MapPin, Link as LinkIcon, ShieldCheck, Lock, UserPlus, Ex
 import Link from 'next/link';
 import TrackView from './TrackView';
 import TrackLink from './TrackLink';
+import { AUTHLOG_API, TENANT_SLUG } from '@/lib/config';
+import { legacyGetPublicProfile } from '@/lib/legacy-api';
 
 interface UserProfile {
   id: string;
@@ -49,14 +51,18 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   let status = 200;
 
   try {
-    // Fetch data from the public endpoint (no caching for instant privacy updates)
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/user/${username}`, {
-      cache: 'no-store'
+    const res = await fetch(`${AUTHLOG_API}/v1/users/public/${username}`, {
+      headers: { 'X-Tenant-Slug': TENANT_SLUG },
+      cache: 'no-store',
     });
-    status = res.status;
-
     if (res.ok) {
       user = await res.json();
+      status = 200;
+    } else if (res.status === 404) {
+      user = await legacyGetPublicProfile(username);
+      status = user ? 200 : 404;
+    } else {
+      status = res.status;
     }
   } catch (error) {
     status = 500;
