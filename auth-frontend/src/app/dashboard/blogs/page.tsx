@@ -64,19 +64,32 @@ export default function BlogsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl font-semibold">Blogs</h1>
-          <p className="text-sm text-zinc-500 mt-1">Create and manage your blog posts.</p>
+          <p className="text-sm text-zinc-500 mt-1">Create and manage your blog posts. Published posts appear on the public blog.</p>
         </div>
-        <Link
-          href="/dashboard/blogs/new"
-          className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-        >
-          <Plus className="w-4 h-4" />
-          New post
-        </Link>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href="/blog"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 border border-zinc-200 dark:border-[#333] text-sm font-medium rounded-lg hover:bg-zinc-50 dark:hover:bg-[#111]"
+          >
+            View public blog →
+          </a>
+          <Link
+            href="/dashboard/blogs/new"
+            className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-black dark:bg-white text-white dark:text-black text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
+          >
+            <Plus className="w-4 h-4" />
+            New post
+          </Link>
+        </div>
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">{error}</div>
+        <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">
+          {error}
+          <p className="mt-2 text-xs opacity-80">Tip: ensure NEXT_PUBLIC_API_URL ends with /Prod/api and you are logged in.</p>
+        </div>
       )}
 
       {posts.length === 0 ? (
@@ -93,6 +106,7 @@ export default function BlogsPage() {
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500">Title</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden sm:table-cell">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden lg:table-cell">Tags</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden md:table-cell">Updated</th>
                 <th className="text-right px-4 py-3 font-medium text-zinc-500">Actions</th>
               </tr>
@@ -112,6 +126,19 @@ export default function BlogsPage() {
                     }`}>
                       {post.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 hidden lg:table-cell">
+                    {post.tags && post.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1">
+                        {post.tags.map((tag) => (
+                          <span key={tag} className="px-1.5 py-0.5 rounded text-xs bg-zinc-100 dark:bg-[#111] text-zinc-500">
+                            #{tag}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-zinc-500 hidden md:table-cell">
                     {post.updatedAt ? new Date(post.updatedAt).toLocaleDateString() : '—'}

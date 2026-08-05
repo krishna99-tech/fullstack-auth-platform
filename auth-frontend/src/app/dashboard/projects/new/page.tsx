@@ -5,16 +5,16 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { createPost, BlogError } from '@/lib/blog-client';
+import { createProject, ProjectError } from '@/lib/project-client';
 
-export default function NewBlogPage() {
+export default function NewProjectPage() {
   useAuthGuard();
   const router = useRouter();
   const { getAccessToken } = useAuth();
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
+  const [projectUrl, setProjectUrl] = useState('');
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -26,10 +26,10 @@ export default function NewBlogPage() {
     setLoading(true);
     setError('');
     try {
-      const post = await createPost({ title, excerpt, content, tags, status }, token);
-      router.push(`/dashboard/blogs/${post.id}/edit`);
+      const project = await createProject({ title, excerpt, content, projectUrl, status }, token);
+      router.push(`/dashboard/projects/${project.id}/edit`);
     } catch (err) {
-      setError(err instanceof BlogError ? err.message : 'Failed to create post');
+      setError(err instanceof ProjectError ? err.message : 'Failed to create project');
     } finally {
       setLoading(false);
     }
@@ -37,10 +37,10 @@ export default function NewBlogPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/blogs" className="text-sm text-zinc-500 hover:text-black dark:hover:text-white mb-6 inline-block">
-        ← Back to blogs
+      <Link href="/dashboard/projects" className="text-sm text-zinc-500 hover:text-black dark:hover:text-white mb-6 inline-block">
+        ← Back to projects
       </Link>
-      <h1 className="text-2xl font-semibold mb-6">New post</h1>
+      <h1 className="text-2xl font-semibold mb-6">New project</h1>
 
       {error && (
         <div className="mb-4 p-3 rounded-lg bg-red-500/10 border border-red-500/30 text-red-500 text-sm">{error}</div>
@@ -54,7 +54,7 @@ export default function NewBlogPage() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
-            placeholder="Post title"
+            placeholder="Project title"
           />
         </div>
         <div>
@@ -67,21 +67,22 @@ export default function NewBlogPage() {
           />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Content</label>
+          <label className="block text-sm font-medium mb-1">Project URL</label>
+          <input
+            className="input-field w-full"
+            type="url"
+            value={projectUrl}
+            onChange={(e) => setProjectUrl(e.target.value)}
+            placeholder="https://example.com"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
           <textarea
             className="input-field w-full min-h-[240px] resize-y font-mono text-sm"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder="Write your post..."
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Tags</label>
-          <input
-            className="input-field w-full"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="auth, tutorial, product (comma-separated)"
+            placeholder="Describe your project..."
           />
         </div>
         <div>
@@ -96,7 +97,7 @@ export default function NewBlogPage() {
           </select>
         </div>
         <button type="submit" className="btn-primary" disabled={loading || !title.trim()}>
-          {loading ? 'Creating...' : 'Create post'}
+          {loading ? 'Creating...' : 'Create project'}
         </button>
       </form>
     </div>

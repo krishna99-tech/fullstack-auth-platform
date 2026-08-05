@@ -68,6 +68,7 @@ Globals:
         AUDIT_LOGS_TABLE: !Ref AuditLogsTable
         ANALYTICS_TABLE: !Ref AnalyticsTable
         BLOGS_TABLE: !Ref BlogsTable
+        PROJECTS_TABLE: !Ref ProjectsTable
         FRONTEND_URL: !Ref FrontendUrl
         BACKEND_URL: !Ref BackendUrl
         JWT_SECRET: !Ref JwtSecret
@@ -233,6 +234,39 @@ Resources:
             ProjectionType: ALL
       BillingMode: PAY_PER_REQUEST
 
+  ProjectsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: auth-projects
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+        - AttributeName: slug
+          AttributeType: S
+        - AttributeName: authorId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: SlugIndex
+          KeySchema:
+            - AttributeName: slug
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: AuthorIdIndex
+          KeySchema:
+            - AttributeName: authorId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      BillingMode: PAY_PER_REQUEST
+
   AuthApiFunction:
     Type: AWS::Serverless::Function
     Properties:
@@ -254,6 +288,8 @@ Resources:
             TableName: !Ref AnalyticsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref BlogsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProjectsTable
       Events:
         ProxyApiRoot:
           Type: Api

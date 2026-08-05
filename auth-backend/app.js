@@ -9,6 +9,7 @@ const DynamoDBStore = require('connect-dynamodb')(session);
 
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
+const projectRoutes = require('./routes/projectRoutes');
 
 const app = express();
 app.set('trust proxy', true);
@@ -49,6 +50,7 @@ app.use(passport.session());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/blog', blogRoutes);
+app.use('/api/projects', projectRoutes);
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

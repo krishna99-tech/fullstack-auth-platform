@@ -16,6 +16,18 @@ export function BlogCard({ post }: { post: BlogPostSummary }) {
       {post.excerpt && (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400 line-clamp-3">{post.excerpt}</p>
       )}
+      {post.tags && post.tags.length > 0 && (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {post.tags.map((tag) => (
+            <span
+              key={tag}
+              className="px-2 py-0.5 rounded-full text-xs border border-zinc-200 dark:border-zinc-700 text-zinc-500"
+            >
+              #{tag}
+            </span>
+          ))}
+        </div>
+      )}
       <span className="inline-block mt-4 text-sm font-medium text-purple-600 dark:text-purple-400">
         Read more →
       </span>

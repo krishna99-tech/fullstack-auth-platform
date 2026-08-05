@@ -5,9 +5,9 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
-import { getPostById, updatePost, BlogError } from '@/lib/blog-client';
+import { getProjectById, updateProject, ProjectError } from '@/lib/project-client';
 
-export default function EditBlogPage() {
+export default function EditProjectPage() {
   useAuthGuard();
   const params = useParams();
   const id = params.id as string;
@@ -15,7 +15,7 @@ export default function EditBlogPage() {
   const [title, setTitle] = useState('');
   const [excerpt, setExcerpt] = useState('');
   const [content, setContent] = useState('');
-  const [tags, setTags] = useState('');
+  const [projectUrl, setProjectUrl] = useState('');
   const [status, setStatus] = useState<'draft' | 'published'>('draft');
   const [slug, setSlug] = useState('');
   const [loading, setLoading] = useState(true);
@@ -26,16 +26,16 @@ export default function EditBlogPage() {
   useEffect(() => {
     const token = getAccessToken();
     if (!token || !id) return;
-    getPostById(id, token)
-      .then((post) => {
-        setTitle(post.title);
-        setExcerpt(post.excerpt || '');
-        setContent(post.content || '');
-        setTags((post.tags || []).join(', '));
-        setStatus(post.status);
-        setSlug(post.slug);
+    getProjectById(id, token)
+      .then((project) => {
+        setTitle(project.title);
+        setExcerpt(project.excerpt || '');
+        setContent(project.content || '');
+        setProjectUrl(project.projectUrl || '');
+        setStatus(project.status);
+        setSlug(project.slug);
       })
-      .catch((err) => setError(err instanceof BlogError ? err.message : 'Failed to load post'))
+      .catch((err) => setError(err instanceof ProjectError ? err.message : 'Failed to load project'))
       .finally(() => setLoading(false));
   }, [id, getAccessToken]);
 
@@ -47,10 +47,10 @@ export default function EditBlogPage() {
     setError('');
     setMessage('');
     try {
-      await updatePost(id, { title, excerpt, content, tags, status }, token);
-      setMessage('Post saved.');
+      await updateProject(id, { title, excerpt, content, projectUrl, status }, token);
+      setMessage('Project saved.');
     } catch (err) {
-      setError(err instanceof BlogError ? err.message : 'Failed to save');
+      setError(err instanceof ProjectError ? err.message : 'Failed to save');
     } finally {
       setSaving(false);
     }
@@ -66,14 +66,14 @@ export default function EditBlogPage() {
 
   return (
     <div className="max-w-2xl">
-      <Link href="/dashboard/blogs" className="text-sm text-zinc-500 hover:text-black dark:hover:text-white mb-6 inline-block">
-        ← Back to blogs
+      <Link href="/dashboard/projects" className="text-sm text-zinc-500 hover:text-black dark:hover:text-white mb-6 inline-block">
+        ← Back to projects
       </Link>
       <div className="flex items-start justify-between gap-4 mb-6">
-        <h1 className="text-2xl font-semibold">Edit post</h1>
+        <h1 className="text-2xl font-semibold">Edit project</h1>
         {status === 'published' && slug && (
           <a
-            href={`/blog/${slug}`}
+            href={`/projects/${slug}`}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-purple-600 dark:text-purple-400 hover:underline shrink-0"
@@ -100,20 +100,15 @@ export default function EditBlogPage() {
           <input className="input-field w-full" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Content</label>
+          <label className="block text-sm font-medium mb-1">Project URL</label>
+          <input className="input-field w-full" type="url" value={projectUrl} onChange={(e) => setProjectUrl(e.target.value)} />
+        </div>
+        <div>
+          <label className="block text-sm font-medium mb-1">Description</label>
           <textarea
             className="input-field w-full min-h-[320px] resize-y font-mono text-sm"
             value={content}
             onChange={(e) => setContent(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block text-sm font-medium mb-1">Tags</label>
-          <input
-            className="input-field w-full"
-            value={tags}
-            onChange={(e) => setTags(e.target.value)}
-            placeholder="auth, tutorial, product (comma-separated)"
           />
         </div>
         <div>

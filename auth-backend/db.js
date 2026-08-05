@@ -15,6 +15,7 @@ const AUTH_SESSIONS_TABLE = process.env.AUTH_SESSIONS_TABLE || 'auth-user-sessio
 const AUDIT_LOGS_TABLE = process.env.AUDIT_LOGS_TABLE || 'auth-audit-logs';
 const ANALYTICS_TABLE = process.env.ANALYTICS_TABLE || 'auth-analytics';
 const BLOGS_TABLE = process.env.BLOGS_TABLE || 'auth-blogs';
+const PROJECTS_TABLE = process.env.PROJECTS_TABLE || 'auth-projects';
 
 async function queryByIndex(tableName, indexName, keyName, keyValue) {
   const params = {
@@ -266,6 +267,59 @@ const db = {
       const post = await db.blog.findUnique({ where });
       if (post) {
         await docClient.send(new DeleteCommand({ TableName: BLOGS_TABLE, Key: { id: post.id } }));
+      }
+    },
+  },
+  project: {
+    findUnique: async ({ where }) => {
+      if (where.id) {
+        const result = await docClient.send(new GetCommand({ TableName: PROJECTS_TABLE, Key: { id: where.id } }));
+        return result.Item || null;
+      }
+      if (where.slug) {
+        const items = await queryByIndex(PROJECTS_TABLE, 'SlugIndex', 'slug', where.slug);
+        return items.length > 0 ? items[0] : null;
+      }
+      return null;
+    },
+    findMany: async ({ where, orderBy }) => {
+      let items = [];
+      if (where?.authorId) {
+        items = await queryByIndex(PROJECTS_TABLE, 'AuthorIdIndex', 'authorId', where.authorId);
+        if (where.status) items = items.filter((item) => item.status === where.status);
+      } else if (where?.status === 'published') {
+        const result = await docClient.send(new ScanCommand({
+          TableName: PROJECTS_TABLE,
+          FilterExpression: '#s = :published',
+          ExpressionAttributeNames: { '#s': 'status' },
+          ExpressionAttributeValues: { ':published': 'published' },
+        }));
+        items = result.Items || [];
+      }
+      if (orderBy?.createdAt === 'desc') {
+        items.sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
+      }
+      return items;
+    },
+    create: async ({ data }) => {
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      const item = { id, createdAt: now, updatedAt: now, status: 'draft', ...data };
+      const cleanItem = removeNulls(item);
+      await docClient.send(new PutCommand({ TableName: PROJECTS_TABLE, Item: cleanItem }));
+      return cleanItem;
+    },
+    update: async ({ where, data }) => {
+      const project = await db.project.findUnique({ where });
+      if (!project) throw new Error('Project not found');
+      const updatedItem = removeNulls({ ...project, ...data, updatedAt: new Date().toISOString() });
+      await docClient.send(new PutCommand({ TableName: PROJECTS_TABLE, Item: updatedItem }));
+      return updatedItem;
+    },
+    delete: async ({ where }) => {
+      const project = await db.project.findUnique({ where });
+      if (project) {
+        await docClient.send(new DeleteCommand({ TableName: PROJECTS_TABLE, Key: { id: project.id } }));
       }
     },
   },

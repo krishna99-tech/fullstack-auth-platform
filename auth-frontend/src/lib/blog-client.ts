@@ -19,6 +19,7 @@ export interface BlogPostSummary {
   slug: string;
   title: string;
   excerpt: string;
+  tags?: string[];
   status?: 'draft' | 'published';
   publishedAt?: string | null;
   createdAt: string;
@@ -36,6 +37,7 @@ export interface BlogPostInput {
   title: string;
   content: string;
   excerpt?: string;
+  tags?: string | string[];
   status?: 'draft' | 'published';
 }
 
@@ -58,8 +60,12 @@ async function parseJson<T>(res: Response): Promise<T> {
 }
 
 /** Public — server-safe */
-export async function listPublishedPosts(): Promise<BlogPostSummary[]> {
-  const res = await fetch(blogUrl('/'), { next: { revalidate: 60 } });
+export async function listPublishedPosts(opts?: { q?: string; tag?: string }): Promise<BlogPostSummary[]> {
+  const params = new URLSearchParams();
+  if (opts?.q) params.set('q', opts.q);
+  if (opts?.tag) params.set('tag', opts.tag);
+  const qs = params.toString();
+  const res = await fetch(blogUrl(qs ? `/?${qs}` : '/'), { cache: 'no-store' });
   if (!res.ok) return [];
   const data = await res.json();
   return data.posts || [];

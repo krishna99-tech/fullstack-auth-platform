@@ -1,6 +1,4 @@
 import Link from 'next/link';
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 
 const UntitledLogo = ({ className }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -12,30 +10,20 @@ const footerNavList = [
     {
         label: "Product",
         items: [
-            { label: "Overview", href: "#" },
-            { label: "Features", href: "#" },
-            { 
-                label: "Solutions", 
-                href: "#",
-                badge: (
-                    <Badge variant="secondary" className="ml-2 px-1.5 py-0 h-4 text-[10px] uppercase tracking-wider">
-                        New
-                    </Badge>
-                ),
-            },
-            { label: "Tutorials", href: "#" },
-            { label: "Pricing", href: "#" },
-            { label: "Releases", href: "#" },
+            { label: "Overview", href: "/" },
+            { label: "Features", href: "/#features" },
+            { label: "Pricing", href: "/pricing" },
+            { label: "Projects", href: "/projects" },
+            { label: "FAQ", href: "/faq" },
         ],
     },
     {
         label: "Company",
         items: [
-            { label: "About us", href: "#" },
+            { label: "About us", href: "/about" },
             { label: "Careers", href: "#" },
             { label: "Press", href: "#" },
-            { label: "News", href: "#" },
-            { label: "Media kit", href: "#" },
+            { label: "News", href: "/blog" },
             { label: "Contact", href: "#" },
         ],
     },
@@ -43,10 +31,9 @@ const footerNavList = [
         label: "Resources",
         items: [
             { label: "Blog", href: "/blog" },
-            { label: "Newsletter", href: "#" },
-            { label: "Events", href: "#" },
-            { label: "Help centre", href: "#" },
-            { label: "Tutorials", href: "#" },
+            { label: "Projects", href: "/projects" },
+            { label: "FAQ", href: "/faq" },
+            { label: "Help centre", href: "/faq" },
             { label: "Support", href: "#" },
         ],
     },
@@ -99,7 +86,6 @@ export const FooterLarge01 = () => {
                                         <li key={idx} className="flex">
                                             <Link href={item.href} className="flex items-center text-sm text-muted-foreground hover:text-foreground hover:underline underline-offset-4 transition-colors">
                                                 {item.label}
-                                                {item.badge}
                                             </Link>
                                         </li>
                                     ))}

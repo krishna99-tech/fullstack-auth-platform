@@ -16,6 +16,7 @@ function publicPost(post, author) {
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt || '',
+    tags: post.tags || [],
     content: post.content || '',
     status: post.status,
     publishedAt: post.publishedAt || null,
@@ -31,9 +32,30 @@ async function getAuthor(authorId) {
   return prisma.user.findUnique({ where: { id: authorId } });
 }
 
+function parseTags(input) {
+  if (!input) return [];
+  if (Array.isArray(input)) return input.map((t) => String(t).trim().toLowerCase()).filter(Boolean);
+  return String(input).split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+}
+
+function matchesQuery(post, q, tag) {
+  if (tag) {
+    const tags = post.tags || [];
+    if (!tags.includes(tag.toLowerCase())) return false;
+  }
+  if (q) {
+    const hay = `${post.title} ${post.excerpt || ''} ${post.content || ''}`.toLowerCase();
+    if (!hay.includes(q.toLowerCase())) return false;
+  }
+  return true;
+}
+
 exports.listPublished = async (req, res) => {
   try {
-    const posts = await prisma.blog.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } });
+    const q = req.query.q || '';
+    const tag = req.query.tag || '';
+    let posts = await prisma.blog.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } });
+    posts = posts.filter((p) => matchesQuery(p, q, tag));
     const withAuthors = await Promise.all(
       posts.map(async (post) => {
         const author = await getAuthor(post.authorId);
@@ -42,6 +64,7 @@ exports.listPublished = async (req, res) => {
           slug: post.slug,
           title: post.title,
           excerpt: post.excerpt || '',
+          tags: post.tags || [],
           publishedAt: post.publishedAt,
           createdAt: post.createdAt,
           author: author
@@ -81,6 +104,7 @@ exports.listMine = async (req, res) => {
         slug: p.slug,
         title: p.title,
         excerpt: p.excerpt || '',
+        tags: p.tags || [],
         status: p.status,
         publishedAt: p.publishedAt,
         createdAt: p.createdAt,
@@ -107,7 +131,7 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { title, content, excerpt, status } = req.body;
+    const { title, content, excerpt, status, tags } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
 
     let baseSlug = slugify(title);
@@ -125,6 +149,7 @@ exports.create = async (req, res) => {
         slug,
         content: content || '',
         excerpt: excerpt || '',
+        tags: parseTags(tags),
         authorId: req.user.userId,
         status: isPublished ? 'published' : 'draft',
         publishedAt: isPublished ? now : null,
@@ -143,11 +168,12 @@ exports.update = async (req, res) => {
     if (!post) return res.status(404).json({ error: 'Post not found' });
     if (post.authorId !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
 
-    const { title, content, excerpt, status } = req.body;
+    const { title, content, excerpt, status, tags } = req.body;
     const updates = {};
     if (title !== undefined) updates.title = title.trim();
     if (content !== undefined) updates.content = content;
     if (excerpt !== undefined) updates.excerpt = excerpt;
+    if (tags !== undefined) updates.tags = parseTags(tags);
     if (status !== undefined) {
       updates.status = status === 'published' ? 'published' : 'draft';
       if (status === 'published' && post.status !== 'published') {

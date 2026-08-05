@@ -4,6 +4,10 @@ const GitHubStrategy = require('passport-github2').Strategy;
 const db = require('../db');
 const jwt = require('jsonwebtoken');
 
+function backendBase() {
+  return (process.env.BACKEND_URL || 'http://localhost:5000').replace(/\/$/, '');
+}
+
 passport.serializeUser((user, done) => {
   done(null, user.id);
 });
@@ -36,7 +40,7 @@ const getLinkedUserId = (req) => {
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID || 'dummy_id',
     clientSecret: process.env.GOOGLE_CLIENT_SECRET || 'dummy_secret',
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/google/callback`,
+    callbackURL: `${backendBase()}/api/auth/google/callback`,
     passReqToCallback: true
   },
   async (req, accessToken, refreshToken, profile, done) => {
@@ -90,7 +94,7 @@ passport.use(new GoogleStrategy({
 passport.use(new GitHubStrategy({
     clientID: process.env.GITHUB_CLIENT_ID || 'dummy_id',
     clientSecret: process.env.GITHUB_CLIENT_SECRET || 'dummy_secret',
-    callbackURL: `${process.env.BACKEND_URL}/api/auth/github/callback`,
+    callbackURL: `${backendBase()}/api/auth/github/callback`,
     passReqToCallback: true
   },
   async (req, accessToken, refreshToken, profile, done) => {

@@ -43,6 +43,7 @@ const navItems = [
   { name: 'Overview', href: '/dashboard', icon: LayoutDashboard },
   { name: 'Users', href: '/dashboard/users', icon: Users, adminOnly: true },
   { name: 'Audit Log', href: '/dashboard/audit', icon: ScrollText },
+  { name: 'Notifications', href: '/dashboard/notifications', icon: Bell },
   { name: 'Projects', href: '/dashboard/projects', icon: FolderPlus },
   { name: 'Organization', href: '/dashboard/organization', icon: Building2, adminOnly: true },
   { name: 'Blogs', href: '/dashboard/blogs', icon: FileText },
@@ -228,9 +229,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 {resolvedTheme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>
             )}
-            <button className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent">
+            <Link
+              href="/dashboard/notifications"
+              className="p-1.5 text-zinc-500 dark:text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors border border-transparent"
+            >
               <Bell className="w-4 h-4" />
-            </button>
+            </Link>
             <DropdownMenu>
               <DropdownMenuTrigger className="focus:outline-none ml-2">
                 <div className="w-8 h-8 rounded-full border border-zinc-200 dark:border-zinc-800 bg-gradient-to-tr from-zinc-100 to-zinc-50 dark:from-zinc-900 dark:to-zinc-800 flex items-center justify-center text-sm font-semibold text-black dark:text-white shrink-0 hover:ring-2 hover:ring-zinc-300 dark:hover:ring-zinc-700 transition-all">
