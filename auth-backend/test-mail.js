@@ -19,7 +19,7 @@ async function testEmail() {
     // Replace the 'to' address with your actual personal email!
     const info = await transporter.sendMail({
       from: process.env.SMTP_FROM || 'no-reply@test.com',
-      to: 'vakavenkatakrishna77@gmail.com', // <--- Change this!
+      to: '', // <--- Change this!
       subject: 'AWS SES Test Email',
       text: 'Hello! If you are reading this, your AWS SES email delivery is working perfectly.',
     });

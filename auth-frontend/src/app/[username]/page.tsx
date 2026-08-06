@@ -1,9 +1,13 @@
 import { notFound } from 'next/navigation';
 import { CalendarDays, MapPin, Link as LinkIcon, ShieldCheck, Lock, UserPlus, ExternalLink } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import TrackView from './TrackView';
 import TrackLink from './TrackLink';
 import { legacyGetPublicProfile } from '@/lib/legacy-api';
+import { getPublicBlogsByUsername, type BlogPostSummary } from '@/lib/blog-client';
+import { getPublicProjectsByUsername, type ProjectSummary } from '@/lib/project-client';
+import ProfileTabs from './ProfileTabs';
 
 interface UserProfile {
   id: string;
@@ -51,10 +55,26 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
   let user: UserProfile | null = null;
   let status = 200;
 
+  let userBlogs: BlogPostSummary[] = [];
+  let userProjects: ProjectSummary[] = [];
+
   try {
-    user = await legacyGetPublicProfile(username);
-    status = user ? 200 : 404;
-  } catch (error) {
+    const [userRes, blogsRes, projectsRes] = await Promise.allSettled([
+      legacyGetPublicProfile(username),
+      getPublicBlogsByUsername(username),
+      getPublicProjectsByUsername(username)
+    ]);
+    
+    if (userRes.status === 'fulfilled') {
+      user = userRes.value as UserProfile | null;
+      status = user ? 200 : 404;
+    } else {
+      status = 500;
+    }
+
+    if (blogsRes.status === 'fulfilled') userBlogs = blogsRes.value as BlogPostSummary[];
+    if (projectsRes.status === 'fulfilled') userProjects = projectsRes.value as ProjectSummary[];
+  } catch {
     status = 500;
   }
 
@@ -243,98 +263,142 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
               style={avatarStyle}
             >
               {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.name || user.username} className="h-full w-full object-cover" />
+                <Image src={user.avatarUrl} alt={user.name || user.username} width={96} height={96} className="h-full w-full object-cover" />
               ) : (
                 user.avatarInitial || (user.username ? user.username.charAt(0).toUpperCase() : '?')
               )}
             </div>
 
-            {/* Profile Info */}
-            <div className="pt-16">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight">{user.name || user.username}</h1>
-                  <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{user.username}</p>
-                </div>
-              </div>
-              
-              {user.bio && (
-                <p className="mt-4 text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
-                  {user.bio}
-                </p>
-              )}
-              
-              <div className="mt-6 flex flex-wrap items-center gap-y-3 gap-x-6 text-sm text-zinc-600 dark:text-zinc-400">
-                {user.location && (
-                  <div className="flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4" />
-                    <span>{user.location}</span>
+            {/* Profile Info wrapped for Tabs */}
+            <ProfileTabs
+              articleCount={userBlogs.length}
+              projectCount={userProjects.length}
+              about={
+                <div className="pt-16">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h1 className="text-2xl font-bold tracking-tight">{user.name || user.username}</h1>
+                      <p className="text-zinc-500 dark:text-zinc-400 font-medium">@{user.username}</p>
+                    </div>
                   </div>
-                )}
-                {user.website && (
-                  <div className="flex items-center gap-1.5">
-                    <LinkIcon className="w-4 h-4" />
-                    <a href={user.website.startsWith('http') ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-500 dark:text-blue-400 font-medium">
-                      {user.website.replace(/^https?:\/\//, '')}
-                    </a>
-                  </div>
-                )}
-                <div className="flex items-center gap-1.5">
-                  <CalendarDays className="w-4 h-4" />
-                  <span>Joined {joinedDate}</span>
-                </div>
-                {user.publishedBlogCount !== undefined && (
-                  <div className="flex items-center gap-1.5">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
-                    </svg>
-                    <span>{user.publishedBlogCount} published blog{user.publishedBlogCount !== 1 ? 's' : ''}</span>
-                  </div>
-                )}
-                <div className="flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  <span className="text-zinc-900 dark:text-zinc-300 font-medium">Verified</span>
-                </div>
-              </div>
-            </div>
-            
-            {/* Social Links */}
-            {user.socialLinks && (user.socialLinks.github || user.socialLinks.twitter || user.socialLinks.linkedin) && (
-              <div className="mt-8 flex items-center gap-4">
-                {user.socialLinks.github && (
-                  <TrackLink username={user.username} url={`https://github.com/${user.socialLinks.github}`} title="GitHub" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white transition-colors">
-                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
-                  </TrackLink>
-                )}
-                {user.socialLinks.twitter && (
-                  <TrackLink username={user.username} url={`https://twitter.com/${user.socialLinks.twitter}`} title="Twitter" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#1DA1F2] dark:hover:text-[#1DA1F2] transition-colors">
-                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M23.954 4.569c-.885.389-1.83.654-2.825.775 1.014-.611 1.794-1.574 2.163-2.723-.951.555-2.005.959-3.127 1.184-.896-.959-2.173-1.559-3.591-1.559-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124C7.691 8.094 4.066 6.13 1.64 3.161c-.427.722-.666 1.561-.666 2.475 0 1.71.87 3.213 2.188 4.096-.807-.026-1.566-.248-2.228-.616v.061c0 2.385 1.693 4.374 3.946 4.827-.413.111-.849.171-1.296.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.377 4.604 3.417-1.68 1.319-3.809 2.105-6.102 2.105-.39 0-.779-.023-1.17-.067 2.189 1.394 4.768 2.209 7.557 2.209 9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63.961-.689 1.8-1.56 2.46-2.548l-.047-.02z"/></svg>
-                  </TrackLink>
-                )}
-                {user.socialLinks.linkedin && (
-                  <TrackLink username={user.username} url={user.socialLinks.linkedin} title="LinkedIn" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#0A66C2] dark:hover:text-[#0A66C2] transition-colors">
-                    <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-                  </TrackLink>
-                )}
-              </div>
-            )}
-
-            {/* Custom Links */}
-            {user.customLinks && user.customLinks.length > 0 && (
-              <div className="mt-8 flex flex-col gap-3">
-                {user.customLinks.map((link, idx) => {
-                  if (!link.title || !link.url) return null;
-                  return (
-                    <TrackLink key={idx} username={user.username} url={link.url} title={link.title} className={`group flex items-center justify-between p-4 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md ${accentHoverClass}`}>
-                      <div className="flex items-center gap-3">
-                        <span className="font-semibold text-zinc-900 dark:text-zinc-100">{link.title}</span>
+                  
+                  {user.bio && (
+                    <p className="mt-4 text-zinc-700 dark:text-zinc-300 leading-relaxed whitespace-pre-wrap">
+                      {user.bio}
+                    </p>
+                  )}
+                  
+                  <div className="mt-6 flex flex-wrap items-center gap-y-3 gap-x-6 text-sm text-zinc-600 dark:text-zinc-400">
+                    {user.location && (
+                      <div className="flex items-center gap-1.5">
+                        <MapPin className="w-4 h-4" />
+                        <span>{user.location}</span>
                       </div>
-                      <ExternalLink className={`w-4 h-4 text-zinc-400 transition-colors ${accentHoverClass}`} />
-                    </TrackLink>
-                  );
-                })}
-              </div>
-            )}
+                    )}
+                    {user.website && (
+                      <div className="flex items-center gap-1.5">
+                        <LinkIcon className="w-4 h-4" />
+                        <a href={user.website.startsWith('http') ? user.website : `https://${user.website}`} target="_blank" rel="noopener noreferrer" className="hover:underline text-blue-500 dark:text-blue-400 font-medium">
+                          {user.website.replace(/^https?:\/\//, '')}
+                        </a>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <CalendarDays className="w-4 h-4" />
+                      <span>Joined {joinedDate}</span>
+                    </div>
+                    {user.publishedBlogCount !== undefined && (
+                      <div className="flex items-center gap-1.5">
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                        </svg>
+                        <span>{user.publishedBlogCount} published blog{user.publishedBlogCount !== 1 ? 's' : ''}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                      <span className="text-zinc-900 dark:text-zinc-300 font-medium">Verified</span>
+                    </div>
+                  </div>
+
+                  {/* Social Links */}
+                  {user.socialLinks && (user.socialLinks.github || user.socialLinks.twitter || user.socialLinks.linkedin) && (
+                    <div className="mt-8 flex items-center gap-4">
+                      {user.socialLinks.github && (
+                        <TrackLink username={user.username} url={`https://github.com/${user.socialLinks.github}`} title="GitHub" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-black dark:hover:text-white transition-colors">
+                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.603-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.462-1.11-1.462-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.831.092-.646.35-1.086.636-1.336-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0112 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.379.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+                        </TrackLink>
+                      )}
+                      {user.socialLinks.twitter && (
+                        <TrackLink username={user.username} url={`https://twitter.com/${user.socialLinks.twitter}`} title="Twitter" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#1DA1F2] dark:hover:text-[#1DA1F2] transition-colors">
+                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M23.954 4.569c-.885.389-1.83.654-2.825.775 1.014-.611 1.794-1.574 2.163-2.723-.951.555-2.005.959-3.127 1.184-.896-.959-2.173-1.559-3.591-1.559-2.717 0-4.92 2.203-4.92 4.917 0 .39.045.765.127 1.124C7.691 8.094 4.066 6.13 1.64 3.161c-.427.722-.666 1.561-.666 2.475 0 1.71.87 3.213 2.188 4.096-.807-.026-1.566-.248-2.228-.616v.061c0 2.385 1.693 4.374 3.946 4.827-.413.111-.849.171-1.296.171-.314 0-.615-.03-.916-.086.631 1.953 2.445 3.377 4.604 3.417-1.68 1.319-3.809 2.105-6.102 2.105-.39 0-.779-.023-1.17-.067 2.189 1.394 4.768 2.209 7.557 2.209 9.054 0 13.999-7.496 13.999-13.986 0-.209 0-.42-.015-.63.961-.689 1.8-1.56 2.46-2.548l-.047-.02z"/></svg>
+                        </TrackLink>
+                      )}
+                      {user.socialLinks.linkedin && (
+                        <TrackLink username={user.username} url={user.socialLinks.linkedin} title="LinkedIn" className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:bg-zinc-200 dark:hover:bg-zinc-800 hover:text-[#0A66C2] dark:hover:text-[#0A66C2] transition-colors">
+                          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+                        </TrackLink>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Custom Links */}
+                  {user.customLinks && user.customLinks.length > 0 && (
+                    <div className="mt-8 flex flex-col gap-3">
+                      {user.customLinks.map((link, idx) => {
+                        if (!link.title || !link.url) return null;
+                        return (
+                          <TrackLink key={idx} username={user.username} url={link.url} title={link.title} className={`group flex items-center justify-between p-4 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl transition-all hover:-translate-y-0.5 hover:shadow-md ${accentHoverClass}`}>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-zinc-900 dark:text-zinc-100">{link.title}</span>
+                            </div>
+                            <ExternalLink className={`w-4 h-4 text-zinc-400 transition-colors ${accentHoverClass}`} />
+                          </TrackLink>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              }
+              articles={
+                <div className="flex flex-col gap-4">
+                  {userBlogs.length === 0 ? (
+                    <div className="text-center py-12 text-zinc-500 bg-zinc-50 dark:bg-zinc-900 rounded-xl">No articles published yet.</div>
+                  ) : (
+                    userBlogs.map((blog: BlogPostSummary) => (
+                      <Link key={blog.id} href={`/blog/${blog.slug}`} className="block p-5 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl hover:border-emerald-500 transition-colors">
+                        <h3 className="font-semibold text-lg mb-2">{blog.title}</h3>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2 mb-3">{blog.excerpt}</p>
+                        <div className="flex gap-2">
+                          {blog.category && <span className="text-xs bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 px-2 py-0.5 rounded-full">{blog.category}</span>}
+                          <span className="text-xs text-zinc-500">{new Date(blog.createdAt).toLocaleDateString()}</span>
+                        </div>
+                      </Link>
+                    ))
+                  )}
+                </div>
+              }
+              projects={
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {userProjects.length === 0 ? (
+                    <div className="col-span-1 sm:col-span-2 text-center py-12 text-zinc-500 bg-zinc-50 dark:bg-zinc-900 rounded-xl">No projects published yet.</div>
+                  ) : (
+                    userProjects.map((project: ProjectSummary) => (
+                      <Link key={project.id} href={`/projects/${project.slug}`} className="block p-5 bg-zinc-50 dark:bg-[#111] border border-zinc-200 dark:border-[#333] rounded-xl hover:border-purple-500 transition-colors">
+                        {project.featuredImage && (
+                          <div className="w-full h-32 bg-zinc-200 dark:bg-zinc-800 rounded-lg mb-4 overflow-hidden relative">
+                            <Image src={project.featuredImage} alt={project.title} fill className="object-cover" />
+                          </div>
+                        )}
+                        <h3 className="font-semibold text-lg mb-1">{project.title}</h3>
+                        <p className="text-sm text-zinc-600 dark:text-zinc-400 line-clamp-2">{project.excerpt}</p>
+                        {project.projectType && <span className="mt-3 inline-block text-xs bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400 px-2 py-0.5 rounded-full">{project.projectType}</span>}
+                      </Link>
+                    ))
+                  )}
+                </div>
+              }
+            />
             
             <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-[#333] flex justify-between items-center">
               <p className="text-sm text-zinc-500">This is a public profile namespace.</p>

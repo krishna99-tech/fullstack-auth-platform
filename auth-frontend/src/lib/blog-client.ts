@@ -96,6 +96,13 @@ export async function getPostBySlug(slug: string): Promise<BlogPost | null> {
   return data.post || null;
 }
 
+export async function getPublicBlogsByUsername(username: string): Promise<BlogPostSummary[]> {
+  const res = await fetch(blogUrl(`/user/${username}`), { cache: 'no-store' });
+  if (!res.ok) throw new Error('Failed to fetch user posts');
+  const data = await res.json();
+  return data.posts || [];
+}
+
 export async function listMyPosts(token?: string): Promise<BlogPostSummary[]> {
   const access = token || tokens.getAccess();
   if (!access) throw new BlogError('Not authenticated', 401);

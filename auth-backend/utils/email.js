@@ -68,7 +68,7 @@ const transporter = nodemailer.createTransport({
   requireTLS: true,    // enforce TLS upgrade via STARTTLS
   auth: {
     user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASS,
+    pass: (process.env.SMTP_PASS || '').replace(/^["']|["']$/g, ''),
   },
   tls: {
     rejectUnauthorized: false, // allow self-signed certs (common with SES endpoints)
@@ -90,8 +90,13 @@ transporter.use('compile', hbs(handlebarOptions));
 
 exports.sendVerificationEmail = async (email, token, name) => {
   const digits = String(token).split('').map(d => d);
+  let fromAddress = (process.env.SMTP_FROM || '').replace(/^["']|["']$/g, '');
+  if (!fromAddress.includes('@')) {
+    fromAddress = '"Authlog" <no-reply@thingsnxt.com>';
+  }
+
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || '"Auth Platform" <noreply@myplatform.com>',
+    from: fromAddress,
     to: email,
     subject: 'Verify your email address',
     template: 'verification',
@@ -110,8 +115,13 @@ exports.sendVerificationEmail = async (email, token, name) => {
 
 exports.sendWelcomeEmail = async (email, name) => {
   const loginLink = `${process.env.FRONTEND_URL}/login`;
+  let fromAddress = (process.env.SMTP_FROM || '').replace(/^["']|["']$/g, '');
+  if (!fromAddress.includes('@')) {
+    fromAddress = '"Authlog" <no-reply@thingsnxt.com>';
+  }
+
   await transporter.sendMail({
-    from: process.env.SMTP_FROM || '"Auth Platform" <noreply@myplatform.com>',
+    from: fromAddress,
     to: email,
     subject: 'Welcome to Auth Platform!',
     template: 'welcome',

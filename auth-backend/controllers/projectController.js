@@ -115,8 +115,29 @@ exports.listPublished = async (req, res) => {
     );
     res.json({ projects: withAuthors });
   } catch (err) {
-    console.error('listPublished projects error:', err);
+    console.error('listPublished error:', err);
     res.status(500).json({ error: 'Failed to load projects' });
+  }
+};
+
+exports.listByUser = async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+    
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const projects = await prisma.project.findMany({ 
+      where: { authorId: user.id, status: 'published' }, 
+      orderBy: { createdAt: 'desc' } 
+    });
+    
+    const mapped = projects.map(p => publicProject(p, user));
+    res.json({ projects: mapped, total: mapped.length });
+  } catch (err) {
+    console.error('listByUser error:', err);
+    res.status(500).json({ error: 'Failed to load user projects' });
   }
 };
 

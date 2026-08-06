@@ -106,6 +106,13 @@ export async function listPublishedProjects(): Promise<ProjectSummary[]> {
   return data.projects || [];
 }
 
+export async function getPublicProjectsByUsername(username: string): Promise<ProjectSummary[]> {
+  const res = await fetch(projectUrl(`/user/${username}`), { cache: 'no-store' });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.projects || [];
+}
+
 export async function getProjectBySlug(slug: string): Promise<Project | null> {
   const res = await fetch(projectUrl(`/slug/${encodeURIComponent(slug)}`), { cache: 'no-store' });
   if (!res.ok) return null;

@@ -101,6 +101,27 @@ exports.listPublished = async (req, res) => {
   }
 };
 
+exports.listByUser = async (req, res) => {
+  try {
+    const { username } = req.params;
+    if (!username) return res.status(400).json({ error: 'Username required' });
+    
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    const posts = await prisma.blog.findMany({ 
+      where: { authorId: user.id, status: 'published' }, 
+      orderBy: { createdAt: 'desc' } 
+    });
+    
+    const mapped = posts.map(p => publicPost(p, user));
+    res.json({ posts: mapped, total: mapped.length });
+  } catch (err) {
+    console.error('listByUser error:', err);
+    res.status(500).json({ error: 'Failed to load user posts' });
+  }
+};
+
 exports.getBySlug = async (req, res) => {
   try {
     const post = await prisma.blog.findUnique({ where: { slug: req.params.slug } });

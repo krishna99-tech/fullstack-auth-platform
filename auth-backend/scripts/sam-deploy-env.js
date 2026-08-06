@@ -20,11 +20,14 @@ const envFile = envFileArg ? envFileArg.split('=')[1] : path.join(root, '.env');
 
 function run(cmd, cmdArgs) {
   console.log(`\n> ${cmd} ${cmdArgs.join(' ')}\n`);
+  const tempAppData = path.join(root, '.temp-appdata');
+  if (!fs.existsSync(tempAppData)) fs.mkdirSync(tempAppData);
+  
   const result = spawnSync(cmd, cmdArgs, {
     stdio: 'inherit',
     shell: process.platform === 'win32',
     cwd: root,
-    env: { ...process.env, SAM_CLI_TELEMETRY: '0' },
+    env: { ...process.env, SAM_CLI_TELEMETRY: '0', APPDATA: tempAppData },
   });
   if (result.status !== 0) {
     process.exit(result.status ?? 1);
