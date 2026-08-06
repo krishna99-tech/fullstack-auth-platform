@@ -17,7 +17,57 @@ function publicProject(project, author) {
     title: project.title,
     excerpt: project.excerpt || '',
     content: project.content || '',
+    richSections: project.richSections || {},
+    
+    featuredImage: project.featuredImage || null,
+    logo: project.logo || null,
+    gallery: project.gallery || [],
+    videoDemo: project.videoDemo || null,
+    thumbnail: project.thumbnail || null,
+
+    technologies: project.technologies || [],
+    features: project.features || [],
+    screenshots: project.screenshots || [],
+    tags: project.tags || [],
+    category: project.category || null,
+    
+    projectType: project.projectType || null,
+    difficulty: project.difficulty || null,
+    teamSize: project.teamSize || null,
+    duration: project.duration || null,
+    client: project.client || null,
+    company: project.company || null,
+    license: project.license || null,
+    
+    startDate: project.startDate || null,
+    endDate: project.endDate || null,
+    
+    githubUrl: project.githubUrl || '',
     projectUrl: project.projectUrl || '',
+    documentationUrl: project.documentationUrl || '',
+    apiDocsUrl: project.apiDocsUrl || '',
+    downloadUrl: project.downloadUrl || '',
+    
+    metaTitle: project.metaTitle || '',
+    metaDescription: project.metaDescription || '',
+    keywords: project.keywords || '',
+    canonicalUrl: project.canonicalUrl || '',
+    ogImage: project.ogImage || '',
+    
+    visibility: project.visibility || 'public',
+    featured: project.featured || false,
+    pinned: project.pinned || false,
+    
+    views: project.views || 0,
+    likes: project.likes || 0,
+    downloads: project.downloads || 0,
+    stars: project.stars || 0,
+    forks: project.forks || 0,
+    comments: project.comments || 0,
+    
+    progress: project.progress || 0,
+    attachments: project.attachments || [],
+    
     status: project.status,
     publishedAt: project.publishedAt || null,
     createdAt: project.createdAt,
@@ -43,7 +93,20 @@ exports.listPublished = async (req, res) => {
           slug: p.slug,
           title: p.title,
           excerpt: p.excerpt || '',
+          featuredImage: p.featuredImage || null,
+          technologies: p.technologies || [],
+          projectType: p.projectType || null,
+          category: p.category || null,
+          tags: p.tags || [],
           projectUrl: p.projectUrl || '',
+          githubUrl: p.githubUrl || '',
+          visibility: p.visibility || 'public',
+          featured: p.featured || false,
+          pinned: p.pinned || false,
+          views: p.views || 0,
+          likes: p.likes || 0,
+          progress: p.progress || 0,
+          status: p.status,
           publishedAt: p.publishedAt,
           createdAt: p.createdAt,
           author: author ? { name: author.name || author.email, username: author.username } : { name: 'Author' },
@@ -81,7 +144,19 @@ exports.listMine = async (req, res) => {
         slug: p.slug,
         title: p.title,
         excerpt: p.excerpt || '',
+        featuredImage: p.featuredImage || null,
+        technologies: p.technologies || [],
+        projectType: p.projectType || null,
+        category: p.category || null,
+        tags: p.tags || [],
         projectUrl: p.projectUrl || '',
+        githubUrl: p.githubUrl || '',
+        visibility: p.visibility || 'public',
+        featured: p.featured || false,
+        pinned: p.pinned || false,
+        views: p.views || 0,
+        likes: p.likes || 0,
+        progress: p.progress || 0,
         status: p.status,
         publishedAt: p.publishedAt,
         createdAt: p.createdAt,
@@ -108,8 +183,8 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { title, content, excerpt, status, projectUrl } = req.body;
-    if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
+    const data = req.body;
+    if (!data.title?.trim()) return res.status(400).json({ error: 'Title is required' });
 
     let baseSlug = slugify(title);
     let slug = baseSlug;
@@ -119,16 +194,69 @@ exports.create = async (req, res) => {
     }
 
     const now = new Date().toISOString();
-    const isPublished = status === 'published';
+    const isPublished = data.status === 'published';
+    const statusValues = ['planning', 'development', 'testing', 'production', 'maintenance', 'archived', 'draft', 'published'];
+    const finalStatus = statusValues.includes(data.status?.toLowerCase()) ? data.status.toLowerCase() : 'draft';
+
     const project = await prisma.project.create({
       data: {
-        title: title.trim(),
+        title: data.title.trim(),
         slug,
-        content: content || '',
-        excerpt: excerpt || '',
-        projectUrl: projectUrl || '',
+        excerpt: data.excerpt || '',
+        content: data.content || '',
+        richSections: data.richSections || {},
+        
+        featuredImage: data.featuredImage || null,
+        logo: data.logo || null,
+        gallery: Array.isArray(data.gallery) ? data.gallery : [],
+        videoDemo: data.videoDemo || null,
+        thumbnail: data.thumbnail || null,
+
+        technologies: Array.isArray(data.technologies) ? data.technologies : [],
+        features: Array.isArray(data.features) ? data.features : [],
+        screenshots: Array.isArray(data.screenshots) ? data.screenshots : [],
+        tags: Array.isArray(data.tags) ? data.tags : [],
+        category: data.category || null,
+        
+        projectType: data.projectType || null,
+        difficulty: data.difficulty || null,
+        teamSize: data.teamSize || null,
+        duration: data.duration || null,
+        client: data.client || null,
+        company: data.company || null,
+        license: data.license || null,
+        
+        startDate: data.startDate || null,
+        endDate: data.endDate || null,
+        
+        githubUrl: data.githubUrl || '',
+        projectUrl: data.projectUrl || '',
+        documentationUrl: data.documentationUrl || '',
+        apiDocsUrl: data.apiDocsUrl || '',
+        downloadUrl: data.downloadUrl || '',
+        
+        metaTitle: data.metaTitle || '',
+        metaDescription: data.metaDescription || '',
+        keywords: data.keywords || '',
+        canonicalUrl: data.canonicalUrl || '',
+        ogImage: data.ogImage || '',
+        
+        visibility: ['private', 'public'].includes(data.visibility) ? data.visibility : 'public',
+        featured: Boolean(data.featured),
+        pinned: Boolean(data.pinned),
+        
+        views: 0,
+        likes: 0,
+        downloads: 0,
+        stars: 0,
+        forks: 0,
+        comments: 0,
+        
+        progress: typeof data.progress === 'number' ? data.progress : 0,
+        attachments: Array.isArray(data.attachments) ? data.attachments : [],
+        
         authorId: req.user.userId,
-        status: isPublished ? 'published' : 'draft',
+        status: finalStatus,
         publishedAt: isPublished ? now : null,
       },
     });
@@ -145,18 +273,35 @@ exports.update = async (req, res) => {
     if (!project) return res.status(404).json({ error: 'Project not found' });
     if (project.authorId !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
 
-    const { title, content, excerpt, status, projectUrl } = req.body;
+    const data = req.body;
     const updates = {};
-    if (title !== undefined) updates.title = title.trim();
-    if (content !== undefined) updates.content = content;
-    if (excerpt !== undefined) updates.excerpt = excerpt;
-    if (projectUrl !== undefined) updates.projectUrl = projectUrl;
-    if (status !== undefined) {
-      updates.status = status === 'published' ? 'published' : 'draft';
-      if (status === 'published' && project.status !== 'published') {
+    
+    // Copy all allowed fields if they exist in request body
+    const fields = [
+      'title', 'content', 'excerpt', 'richSections',
+      'featuredImage', 'logo', 'gallery', 'videoDemo', 'thumbnail',
+      'technologies', 'features', 'screenshots', 'tags', 'category',
+      'projectType', 'difficulty', 'teamSize', 'duration', 'client', 'company', 'license',
+      'startDate', 'endDate',
+      'githubUrl', 'projectUrl', 'documentationUrl', 'apiDocsUrl', 'downloadUrl',
+      'metaTitle', 'metaDescription', 'keywords', 'canonicalUrl', 'ogImage',
+      'visibility', 'featured', 'pinned', 'progress', 'attachments'
+    ];
+
+    for (const field of fields) {
+      if (data[field] !== undefined) {
+        updates[field] = data[field];
+      }
+    }
+    
+    if (data.status !== undefined) {
+      const statusValues = ['planning', 'development', 'testing', 'production', 'maintenance', 'archived', 'draft', 'published'];
+      updates.status = statusValues.includes(data.status?.toLowerCase()) ? data.status.toLowerCase() : 'draft';
+      
+      if (updates.status === 'published' && project.status !== 'published') {
         updates.publishedAt = new Date().toISOString();
       }
-      if (status === 'draft') updates.publishedAt = null;
+      if (updates.status === 'draft') updates.publishedAt = null;
     }
 
     const updated = await prisma.project.update({ where: { id: project.id }, data: updates });

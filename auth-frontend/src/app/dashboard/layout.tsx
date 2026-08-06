@@ -58,11 +58,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const { user, loading, logout, isAdmin } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const { theme, setTheme, resolvedTheme } = useTheme();
+  const { setTheme, resolvedTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     if (!loading && !user && !tokens.hasSession()) {
       router.push('/login');
     }
@@ -73,7 +73,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   const visibleNav = navItems.filter((item) => !item.adminOnly || isAdmin);
 
-  const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => (
+  const renderSidebarContent = (isMobile = false) => (
     <div className="flex flex-col h-full bg-white dark:bg-[#000000]">
       <div className="px-4 py-4 md:py-6 flex items-center justify-between">
         <button className="flex-1 flex items-center justify-between hover:bg-zinc-100 dark:hover:bg-[#111] p-2 rounded-lg transition-colors border border-transparent">
@@ -146,7 +146,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#000000] text-black dark:text-white flex font-sans selection:bg-cyan-300 selection:text-cyan-900 dark:selection:bg-cyan-900 dark:selection:text-cyan-50">
+    <div className="h-screen overflow-hidden bg-white dark:bg-[#000000] text-black dark:text-white flex font-sans selection:bg-cyan-300 selection:text-cyan-900 dark:selection:bg-cyan-900 dark:selection:text-cyan-50">
       <AnimatePresence>
         {mobileMenuOpen && (
           <>
@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               transition={{ type: 'spring', damping: 25, stiffness: 200 }}
               className="fixed inset-y-0 left-0 w-[280px] bg-white dark:bg-[#000] border-r border-zinc-200 dark:border-zinc-800/50 z-50 flex flex-col"
             >
-              <SidebarContent isMobile={true} />
+              {renderSidebarContent(true)}
             </motion.div>
           </>
         )}
@@ -180,7 +180,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         className="hidden lg:flex flex-col border-r border-zinc-200 dark:border-[#333] shrink-0 bg-white dark:bg-[#000] overflow-hidden"
       >
         <div className="w-[260px] h-full flex flex-col">
-          <SidebarContent isMobile={false} />
+          {renderSidebarContent(false)}
         </div>
       </motion.div>
 

@@ -3,7 +3,7 @@
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useState } from 'react';
 
-export function BlogSearch({ tags }: { tags: string[] }) {
+export function BlogSearch({ tags, categories }: { tags: string[], categories: string[] }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [q, setQ] = useState(searchParams.get('q') || '');
@@ -14,6 +14,8 @@ export function BlogSearch({ tags }: { tags: string[] }) {
     if (q.trim()) params.set('q', q.trim());
     const tag = searchParams.get('tag');
     if (tag) params.set('tag', tag);
+    const category = searchParams.get('category');
+    if (category) params.set('category', category);
     router.push(`/blog${params.toString() ? `?${params}` : ''}`);
   };
 
@@ -21,6 +23,17 @@ export function BlogSearch({ tags }: { tags: string[] }) {
     const params = new URLSearchParams();
     if (q.trim()) params.set('q', q.trim());
     if (tag) params.set('tag', tag);
+    const category = searchParams.get('category');
+    if (category) params.set('category', category);
+    router.push(`/blog${params.toString() ? `?${params}` : ''}`);
+  };
+
+  const setCategory = (category: string | null) => {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set('q', q.trim());
+    const tag = searchParams.get('tag');
+    if (tag) params.set('tag', tag);
+    if (category) params.set('category', category);
     router.push(`/blog${params.toString() ? `?${params}` : ''}`);
   };
 
@@ -37,8 +50,31 @@ export function BlogSearch({ tags }: { tags: string[] }) {
         />
         <button type="submit" className="btn-primary px-4">Search</button>
       </form>
+      {categories.length > 0 && (
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-zinc-500 font-medium mr-2">Categories:</span>
+          <button
+            type="button"
+            onClick={() => setCategory(null)}
+            className={`px-3 py-1 rounded-full text-xs font-medium border ${!searchParams.get('category') ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white' : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'}`}
+          >
+            All
+          </button>
+          {categories.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c)}
+              className={`px-3 py-1 rounded-full text-xs font-medium border ${searchParams.get('category') === c ? 'bg-black dark:bg-white text-white dark:text-black border-black dark:border-white' : 'border-zinc-300 dark:border-zinc-700 text-zinc-600 dark:text-zinc-400'}`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+      )}
       {tags.length > 0 && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 items-center">
+          <span className="text-xs text-zinc-500 font-medium mr-2">Tags:</span>
           <button
             type="button"
             onClick={() => setTag(null)}

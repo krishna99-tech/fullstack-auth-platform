@@ -44,9 +44,29 @@ function mapAuditEvent(e: AuditEvent): AuditLog {
     userId: e.actor?.id || '',
     event: e.action.replace(/\./g, ' ').replace(/_/g, ' '),
     ipAddress: e.actor?.ip || '—',
-    location: e.actor?.user_agent?.slice(0, 40) || '—',
+    location: (e.metadata?.location as string) || e.actor?.user_agent?.slice(0, 40) || '—',
     type: outcomeMap[e.outcome] || 'info',
   };
+}
+
+interface ChartDataPoint {
+  date: string;
+  views: number;
+  clicks: number;
+}
+
+interface TopLink {
+  url: string;
+  title: string;
+  clicks: number;
+  percentage: number;
+}
+
+interface TopLocation {
+  country: string;
+  code: string;
+  views: number;
+  percentage: number;
 }
 
 export default function AnalyticsPage() {
@@ -60,9 +80,9 @@ export default function AnalyticsPage() {
     totalViews: 0,
     totalClicks: 0,
     ctr: '0',
-    chartData: [],
-    topLinks: [] as any[],
-    topLocations: [] as any[]
+    chartData: [] as ChartDataPoint[],
+    topLinks: [] as TopLink[],
+    topLocations: [] as TopLocation[]
   });
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -85,8 +105,8 @@ export default function AnalyticsPage() {
         const mapped = auditData.events.map(mapAuditEvent);
         setLogs(mapped);
         setStats({
-          totalLogins: mapped.filter((l) => l.event.includes('login success')).length,
-          failedLogins: mapped.filter((l) => l.event.includes('login failure')).length,
+          totalLogins: mapped.filter((l) => l.event.includes('login') && !l.event.includes('fail')).length,
+          failedLogins: mapped.filter((l) => l.event.includes('fail') && l.event.includes('login')).length,
           passwordChanges: mapped.filter((l) => l.event.includes('password')).length,
         });
         setTotalPages(Math.max(1, Math.ceil(mapped.length / limit)));
@@ -357,7 +377,7 @@ export default function AnalyticsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-200 dark:divide-[#333]">
-                  {logs.map((log, idx) => {
+                  {logs.slice((currentPage - 1) * limit, currentPage * limit).map((log, idx) => {
                     const Icon = getIconForEvent(log.event, log.type);
                     return (
                       <tr key={idx} className="hover:bg-zinc-50/50 dark:hover:bg-[#111] transition-colors group">

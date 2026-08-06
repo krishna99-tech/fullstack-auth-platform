@@ -18,6 +18,7 @@ interface UserProfile {
   theme?: string;
   socialLinks?: { github?: string; twitter?: string; linkedin?: string };
   customLinks?: { title: string; url: string }[];
+  publishedBlogCount?: number;
 }
 
 // Add metadata for SEO
@@ -192,21 +193,29 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
     let avatarBorderClass = "from-zinc-200 to-zinc-50 dark:from-zinc-800 dark:to-zinc-700 border border-zinc-200 dark:border-[#333]";
     let accentHoverClass = "hover:border-zinc-500 dark:hover:border-zinc-500 group-hover:text-zinc-500";
     
-    if (user.theme === 'emerald') {
+    let bannerStyle: React.CSSProperties = {};
+    let avatarStyle: React.CSSProperties = {};
+
+    if (user.theme?.startsWith('#')) {
+      bannerClass = "border-b border-zinc-200 dark:border-[#333]";
+      bannerStyle = { backgroundColor: user.theme };
+      avatarBorderClass = "border-4 border-white dark:border-[#0a0a0a]";
+      avatarStyle = { borderColor: user.theme, backgroundColor: user.theme + '20' };
+    } else if (user.theme === 'emerald') {
       bannerClass = "bg-gradient-to-r from-emerald-400 to-teal-600 dark:from-emerald-500 dark:to-teal-700";
-      avatarBorderClass = "from-emerald-100 to-teal-50 dark:from-emerald-900 dark:to-teal-900";
+      avatarBorderClass = "from-emerald-100 to-teal-50 dark:from-emerald-900 dark:to-teal-900 border border-zinc-200 dark:border-[#333]";
       accentHoverClass = "hover:border-emerald-500 dark:hover:border-emerald-500 group-hover:text-emerald-500";
     } else if (user.theme === 'blue') {
       bannerClass = "bg-gradient-to-r from-blue-400 to-indigo-600 dark:from-blue-500 dark:to-indigo-700";
-      avatarBorderClass = "from-blue-100 to-indigo-50 dark:from-blue-900 dark:to-indigo-900";
+      avatarBorderClass = "from-blue-100 to-indigo-50 dark:from-blue-900 dark:to-indigo-900 border border-zinc-200 dark:border-[#333]";
       accentHoverClass = "hover:border-blue-500 dark:hover:border-blue-500 group-hover:text-blue-500";
     } else if (user.theme === 'purple') {
       bannerClass = "bg-gradient-to-r from-purple-400 to-fuchsia-600 dark:from-purple-500 dark:to-fuchsia-700";
-      avatarBorderClass = "from-purple-100 to-fuchsia-50 dark:from-purple-900 dark:to-fuchsia-900";
+      avatarBorderClass = "from-purple-100 to-fuchsia-50 dark:from-purple-900 dark:to-fuchsia-900 border border-zinc-200 dark:border-[#333]";
       accentHoverClass = "hover:border-purple-500 dark:hover:border-purple-500 group-hover:text-purple-500";
     } else if (user.theme === 'rose') {
       bannerClass = "bg-gradient-to-r from-rose-400 to-orange-600 dark:from-rose-500 dark:to-orange-700";
-      avatarBorderClass = "from-rose-100 to-orange-50 dark:from-rose-900 dark:to-orange-900";
+      avatarBorderClass = "from-rose-100 to-orange-50 dark:from-rose-900 dark:to-orange-900 border border-zinc-200 dark:border-[#333]";
       accentHoverClass = "hover:border-rose-500 dark:hover:border-rose-500 group-hover:text-rose-500";
     }
 
@@ -225,11 +234,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           <div className="max-w-2xl w-full bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-2xl shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-500">
           <TrackView username={user.username} />
           {/* Banner */}
-          <div className={`h-32 w-full ${bannerClass}`} />
+          <div className={`h-32 w-full ${bannerClass}`} style={bannerStyle} />
           
           <div className="px-8 pb-8 relative">
             {/* Avatar */}
-            <div className={`absolute -top-12 border-4 border-white dark:border-[#0a0a0a] h-24 w-24 rounded-full overflow-hidden bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center text-3xl font-bold text-black dark:text-white shadow-md`}>
+            <div 
+              className={`absolute -top-12 h-24 w-24 rounded-full overflow-hidden bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center text-3xl font-bold text-black dark:text-white shadow-md`}
+              style={avatarStyle}
+            >
               {user.avatarUrl ? (
                 <img src={user.avatarUrl} alt={user.name || user.username} className="h-full w-full object-cover" />
               ) : (
@@ -271,6 +283,14 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                   <CalendarDays className="w-4 h-4" />
                   <span>Joined {joinedDate}</span>
                 </div>
+                {user.publishedBlogCount !== undefined && (
+                  <div className="flex items-center gap-1.5">
+                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                    </svg>
+                    <span>{user.publishedBlogCount} published blog{user.publishedBlogCount !== 1 ? 's' : ''}</span>
+                  </div>
+                )}
                 <div className="flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
                   <span className="text-zinc-900 dark:text-zinc-300 font-medium">Verified</span>

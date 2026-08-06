@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { listUsers, assignRole, type AuthlogUser } from '@/lib/authlog-client';
 import { AuthlogError } from '@/lib/authlog-client';
-import { Shield, UserPlus } from 'lucide-react';
+import { Shield, UserPlus, ChevronLeft, ChevronRight } from 'lucide-react';
 
 export default function UsersPage() {
   const { loading: authLoading, isAdmin, getAccessToken } = useAuth();
@@ -14,8 +14,11 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [assigning, setAssigning] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 5;
+  const totalPages = Math.max(1, Math.ceil(users.length / limit));
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
     setLoading(true);
@@ -27,12 +30,12 @@ export default function UsersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getAccessToken]);
 
   useEffect(() => {
-    if (!authLoading && isAdmin) loadUsers();
-    else if (!authLoading) setLoading(false);
-  }, [authLoading, isAdmin]);
+    if (!authLoading && isAdmin) setTimeout(() => loadUsers(), 0);
+    else if (!authLoading) setTimeout(() => setLoading(false), 0);
+  }, [authLoading, isAdmin, loadUsers]);
 
   const handleAssignAdmin = async (userId: string) => {
     const token = getAccessToken();
@@ -88,7 +91,7 @@ export default function UsersPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-[#333]">
-            {users.map((u) => (
+            {users.slice((currentPage - 1) * limit, currentPage * limit).map((u) => (
               <tr key={u.id} className="hover:bg-zinc-50/50 dark:hover:bg-[#111]">
                 <td className="px-5 py-4">
                   <div className="font-medium text-[14px]">{u.name || u.email}</div>
@@ -125,6 +128,29 @@ export default function UsersPage() {
             )}
           </tbody>
         </table>
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-zinc-200 dark:border-[#333] flex items-center justify-between bg-zinc-50/30 dark:bg-[#0a0a0a]/50">
+            <p className="text-sm text-[#666]">
+              Page <span className="font-medium text-black dark:text-white">{currentPage}</span> of <span className="font-medium text-black dark:text-white">{totalPages}</span>
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

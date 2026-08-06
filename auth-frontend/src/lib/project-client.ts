@@ -14,8 +14,20 @@ export interface ProjectSummary {
   slug: string;
   title: string;
   excerpt: string;
+  featuredImage?: string | null;
+  technologies?: string[];
+  projectType?: string | null;
+  category?: string | null;
+  tags?: string[];
   projectUrl?: string;
-  status?: 'draft' | 'published';
+  githubUrl?: string;
+  visibility?: 'private' | 'public';
+  featured?: boolean;
+  pinned?: boolean;
+  views?: number;
+  likes?: number;
+  progress?: number;
+  status?: 'planning' | 'development' | 'testing' | 'production' | 'maintenance' | 'archived' | 'draft' | 'published';
   publishedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -24,16 +36,49 @@ export interface ProjectSummary {
 
 export interface Project extends ProjectSummary {
   content: string;
-  status: 'draft' | 'published';
+  richSections?: Record<string, string>;
+  
+  logo?: string | null;
+  gallery?: string[];
+  videoDemo?: string | null;
+  thumbnail?: string | null;
+
+  features?: string[];
+  screenshots?: string[];
+  
+  difficulty?: string | null;
+  teamSize?: string | null;
+  duration?: string | null;
+  client?: string | null;
+  company?: string | null;
+  license?: string | null;
+  
+  startDate?: string | null;
+  endDate?: string | null;
+  
+  documentationUrl?: string;
+  apiDocsUrl?: string;
+  downloadUrl?: string;
+  
+  metaTitle?: string;
+  metaDescription?: string;
+  keywords?: string;
+  canonicalUrl?: string;
+  ogImage?: string;
+  
+  downloads?: number;
+  stars?: number;
+  forks?: number;
+  comments?: number;
+  
+  attachments?: string[];
+  
+  status: 'planning' | 'development' | 'testing' | 'production' | 'maintenance' | 'archived' | 'draft' | 'published';
   updatedAt: string;
 }
 
-export interface ProjectInput {
+export interface ProjectInput extends Partial<Project> {
   title: string;
-  content: string;
-  excerpt?: string;
-  projectUrl?: string;
-  status?: 'draft' | 'published';
 }
 
 function projectUrl(path: string) {

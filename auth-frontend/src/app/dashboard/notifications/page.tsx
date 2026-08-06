@@ -200,7 +200,7 @@ export default function NotificationsPage() {
               No recent security events. Activity from logins, password changes, and session revokes will appear here.
             </p>
           ) : (
-            events.map((event, i) => {
+            events.slice(0, 5).map((event, i) => {
               const Icon = getIconForEvent(event.event);
               return (
                 <div key={`${event.timestamp}-${i}`} className="px-5 py-4 flex items-center gap-3">

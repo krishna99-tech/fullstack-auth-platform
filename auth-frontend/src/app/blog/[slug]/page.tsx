@@ -27,7 +27,14 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
         ← Back to blog
       </Link>
       <header className="mb-8">
+        {post.featuredImage && (
+          <div className="mb-8 rounded-2xl overflow-hidden shadow-sm border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={post.featuredImage} alt={post.title} className="w-full h-auto max-h-[500px] object-cover" />
+          </div>
+        )}
         <p className="text-sm text-zinc-500 mb-3">
+          {post.category && <span className="font-medium text-purple-600 dark:text-purple-400 mr-2">{post.category}</span>}
           {date} · {post.author.name}
           {post.author.username && (
             <> · <span className="text-zinc-400">@{post.author.username}</span></>

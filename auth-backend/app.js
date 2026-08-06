@@ -10,6 +10,8 @@ const DynamoDBStore = require('connect-dynamodb')(session);
 const authRoutes = require('./routes/authRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const projectRoutes = require('./routes/projectRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
+const path = require('path');
 
 const app = express();
 app.set('trust proxy', true);
@@ -51,6 +53,10 @@ app.use(passport.session());
 app.use('/api/auth', authRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/projects', projectRoutes);
+app.use('/api/upload', uploadRoutes);
+
+// Serve static files (like uploaded images) from /tmp for AWS Lambda
+app.use('/uploads', express.static('/tmp/uploads'));
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });

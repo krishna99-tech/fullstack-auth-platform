@@ -403,6 +403,12 @@ exports.getPublicProfile = async (req, res) => {
       initial = user.username.charAt(0).toUpperCase();
     }
 
+    // Fetch published blog count
+    const publishedBlogs = await prisma.blog.findMany({
+      where: { authorId: user.id, status: 'published' }
+    });
+    const publishedBlogCount = publishedBlogs.length;
+
     // Return only safe public fields
     res.json({
       id: user.id,
@@ -417,6 +423,7 @@ exports.getPublicProfile = async (req, res) => {
       customLinks: user.customLinks,
       theme: user.theme,
       avatarUrl: user.avatarUrl || null,
+      publishedBlogCount,
     });
   } catch (error) {
     console.error('Get public profile error:', error);

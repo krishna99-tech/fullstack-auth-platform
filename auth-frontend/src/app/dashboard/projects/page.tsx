@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Plus, Pencil, Trash2, ExternalLink } from 'lucide-react';
@@ -17,7 +17,7 @@ export default function ProjectsPage() {
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const token = getAccessToken();
     if (!token) return;
     setLoading(true);
@@ -30,11 +30,13 @@ export default function ProjectsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getAccessToken]);
 
   useEffect(() => {
-    if (!authLoading) load();
-  }, [authLoading]);
+    if (!authLoading) {
+      setTimeout(() => load(), 0);
+    }
+  }, [authLoading, load]);
 
   const handleDelete = async (id: string) => {
     if (!confirm('Delete this project?')) return;
@@ -105,7 +107,9 @@ export default function ProjectsPage() {
             <thead className="bg-zinc-50 dark:bg-[#0a0a0a] border-b border-zinc-200 dark:border-[#333]">
               <tr>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500">Title</th>
+                <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden sm:table-cell">Category</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden sm:table-cell">Status</th>
+                <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden md:table-cell">Tags</th>
                 <th className="text-left px-4 py-3 font-medium text-zinc-500 hidden md:table-cell">Updated</th>
                 <th className="text-right px-4 py-3 font-medium text-zinc-500">Actions</th>
               </tr>
@@ -117,14 +121,37 @@ export default function ProjectsPage() {
                     <p className="font-medium">{project.title}</p>
                     <p className="text-xs text-zinc-500 mt-0.5 truncate max-w-[200px] sm:max-w-xs">{project.excerpt || '—'}</p>
                   </td>
+                  <td className="px-4 py-3 hidden sm:table-cell text-zinc-600 dark:text-zinc-400">
+                    {project.category || '—'}
+                  </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
-                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium ${
-                      project.status === 'published'
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-medium capitalize ${
+                      project.status === 'published' || project.status === 'production'
                         ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                        : project.status === 'archived'
+                        ? 'bg-orange-500/10 text-orange-600 dark:text-orange-400'
                         : 'bg-zinc-500/10 text-zinc-600 dark:text-zinc-400'
                     }`}>
                       {project.status}
                     </span>
+                  </td>
+                  <td className="px-4 py-3 hidden md:table-cell">
+                    {project.tags && project.tags.length > 0 ? (
+                      <div className="flex flex-wrap gap-1 max-w-[200px]">
+                        {project.tags.slice(0, 3).map((tag) => (
+                          <span key={tag} className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 dark:bg-[#111] text-zinc-600 dark:text-zinc-400 whitespace-nowrap">
+                            #{tag}
+                          </span>
+                        ))}
+                        {project.tags.length > 3 && (
+                          <span className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-zinc-100 dark:bg-[#111] text-zinc-500 whitespace-nowrap">
+                            +{project.tags.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-zinc-400">—</span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-zinc-500 hidden md:table-cell">
                     {project.updatedAt ? new Date(project.updatedAt).toLocaleDateString() : '—'}

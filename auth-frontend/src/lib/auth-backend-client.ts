@@ -82,6 +82,8 @@ export interface UserProfile {
 
   customLinks?: { title: string; url: string }[];
 
+  publishedBlogCount?: number;
+
 }
 
 

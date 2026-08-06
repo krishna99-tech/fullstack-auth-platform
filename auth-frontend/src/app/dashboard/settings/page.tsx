@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
@@ -23,7 +23,7 @@ import {
   deleteAccount,
   type UserProfile,
 } from '@/lib/auth-backend-client';
-import { RefreshCcw, Monitor, AlertTriangle } from 'lucide-react';
+import { RefreshCcw, Monitor, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from "@/lib/utils";
 
 interface UserProfileState extends UserProfile {
@@ -38,6 +38,20 @@ interface Session {
   isCurrent: boolean;
 }
 
+interface SettingCardProps {
+  title: string;
+  description: React.ReactNode;
+  children: React.ReactNode;
+  footerText?: React.ReactNode;
+  onSave?: () => void;
+  isSaving?: boolean;
+  messageKey?: string;
+  messages?: Record<string, { type: 'error' | 'success'; text: string }>;
+  deleteConfirm?: string;
+  profileEmail?: string;
+  isDestructive?: boolean;
+}
+
 const SettingCard = ({ 
   title, 
   description, 
@@ -50,8 +64,8 @@ const SettingCard = ({
   deleteConfirm,
   profileEmail,
   isDestructive = false
-}: any) => {
-  const msg = messages ? messages[messageKey] : null;
+}: SettingCardProps) => {
+  const msg = messageKey && messages ? messages[messageKey] : null;
   return (
     <div className={cn("border bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden", isDestructive ? "border-red-500/30" : "border-zinc-200 dark:border-[#333]")}>
       <div className="p-6">
@@ -98,8 +112,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<UserProfileState | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsPage, setSessionsPage] = useState(1);
+  const sessionsLimit = 3;
+  const sessionsTotalPages = Math.max(1, Math.ceil(sessions.length / sessionsLimit));
 
-  const [activeTab, setActiveTab] = useState('general');
+  const [activeTab, setActiveTab] = useState('profile');
 
   // Individual Form States
   const [editName, setEditName] = useState('');
@@ -160,7 +177,7 @@ export default function SettingsPage() {
   const [deleteConfirm, setDeleteConfirm] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const showMessage = (field: string, type: 'error' | 'success', text: string) => {
+  const showMessage = useCallback((field: string, type: 'error' | 'success', text: string) => {
     setMessages(prev => ({ ...prev, [field]: { type, text } }));
     setTimeout(() => {
       setMessages(prev => {
@@ -169,16 +186,16 @@ export default function SettingsPage() {
         return next;
       });
     }, 4000);
-  };
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const linked = params.get('linked');
     if (linked === 'google' || linked === 'github') {
-      showMessage('social', 'success', `${linked === 'google' ? 'Google' : 'GitHub'} account linked successfully.`);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      setTimeout(() => showMessage('social', 'success', `${linked === 'google' ? 'Google' : 'GitHub'} account linked successfully.`), 0);
+      router.replace(window.location.pathname, { scroll: false });
     }
-  }, []);
+  }, [showMessage, router]);
 
   useEffect(() => {
     const token = getAccessToken();
@@ -436,10 +453,9 @@ export default function SettingsPage() {
     );
   }
 
-  // SettingCard moved outside to prevent unmounting
-
   const tabs = [
-    { id: 'general', label: 'General' },
+    { id: 'profile', label: 'Profile' },
+    { id: 'preferences', label: 'Preferences' },
     { id: 'security', label: 'Security' },
     { id: 'sessions', label: 'Sessions' },
     { id: 'danger', label: 'Danger Zone' },
@@ -475,7 +491,7 @@ export default function SettingsPage() {
         {/* Tab Content */}
         <div className="flex-1 w-full max-w-[640px] space-y-8">
           
-          {activeTab === 'general' && (
+          {activeTab === 'profile' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
               
               <SettingCard
@@ -491,6 +507,7 @@ export default function SettingsPage() {
               >
                 <div className="flex items-center gap-6">
                   {editAvatarUrl ? (
+                    /* eslint-disable-next-line @next/next/no-img-element */
                     <img
                       src={editAvatarUrl}
                       alt="Avatar"
@@ -563,33 +580,6 @@ export default function SettingsPage() {
                 </div>
               </SettingCard>
 
-              <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-[16px] font-semibold text-black dark:text-white">Profile Visibility</h3>
-                    <p className="text-[14px] text-[#666] mt-1">Make your public profile page visible to the internet.</p>
-                  </div>
-                  <button 
-                    onClick={() => handleToggleProfilePublic(profile?.isProfilePublic === false ? true : false)}
-                    disabled={isTogglingProfilePublic}
-                    className={cn("relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
-                      profile?.isProfilePublic !== false ? 'bg-black dark:bg-white' : 'bg-zinc-200 dark:bg-[#333]'
-                    )}
-                  >
-                    <span className={cn("pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white dark:bg-black shadow ring-0 transition duration-200 ease-in-out",
-                      profile?.isProfilePublic !== false ? 'translate-x-[20px]' : 'translate-x-0'
-                    )} />
-                  </button>
-                </div>
-                {messages['profilePublic'] && (
-                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-[#333]">
-                    <span className={messages['profilePublic'].type === 'error' ? 'text-[13px] text-rose-600 dark:text-rose-500 font-medium' : 'text-[13px] text-emerald-600 dark:text-emerald-500 font-medium'}>
-                      {messages['profilePublic'].text}
-                    </span>
-                  </div>
-                )}
-              </div>
-
               <SettingCard
                 messages={messages}
                 deleteConfirm={deleteConfirm}
@@ -619,8 +609,6 @@ export default function SettingsPage() {
                 footerText="These will be displayed on your public profile."
                 onSave={() => {
                   setIsUpdatingLocation(true);
-                  // Chain the updates or just send them together if we modify handleUpdateField to support multiple
-                  // Since we didn't, we will just send two sequential updates for now.
                   handleUpdateField('location', editLocation, setIsUpdatingLocation).then(() => {
                     handleUpdateField('website', editWebsite, () => {});
                   });
@@ -652,6 +640,45 @@ export default function SettingsPage() {
                 </div>
               </SettingCard>
 
+            </div>
+          )}
+
+          {activeTab === 'preferences' && (
+            <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h3 className="text-[16px] font-semibold text-black dark:text-white">Profile Visibility</h3>
+                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20">
+                        {profile?.publishedBlogCount || 0} published blog{(profile?.publishedBlogCount || 0) !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <p className="text-[14px] text-[#666] mt-1">Make your public profile page visible to the internet.</p>
+                  </div>
+                  <button 
+                    onClick={() => handleToggleProfilePublic(profile?.isProfilePublic === false ? true : false)}
+                    disabled={isTogglingProfilePublic}
+                    className={cn("relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
+                      profile?.isProfilePublic !== false ? 'bg-black dark:bg-white' : 'bg-zinc-200 dark:bg-[#333]'
+                    )}
+                  >
+                    <span className={cn("pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white dark:bg-black shadow ring-0 transition duration-200 ease-in-out",
+                      profile?.isProfilePublic !== false ? 'translate-x-[20px]' : 'translate-x-0'
+                    )} />
+                  </button>
+                </div>
+                {messages['profilePublic'] && (
+                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-[#333]">
+                    <span className={messages['profilePublic'].type === 'error' ? 'text-[13px] text-rose-600 dark:text-rose-500 font-medium' : 'text-[13px] text-emerald-600 dark:text-emerald-500 font-medium'}>
+                      {messages['profilePublic'].text}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+
+
               <SettingCard
                 messages={messages}
                 deleteConfirm={deleteConfirm}
@@ -663,13 +690,10 @@ export default function SettingsPage() {
                 isSaving={isUpdatingTheme}
                 messageKey="theme"
               >
-                <div className="flex gap-4">
+                <div className="flex gap-4 items-center">
                   {[
                     { id: 'default', bg: 'bg-zinc-500' },
-                    { id: 'emerald', bg: 'bg-emerald-500' },
-                    { id: 'blue', bg: 'bg-blue-500' },
-                    { id: 'purple', bg: 'bg-purple-500' },
-                    { id: 'rose', bg: 'bg-rose-500' }
+                    { id: 'emerald', bg: 'bg-emerald-500' }
                   ].map(t => (
                     <button
                       key={t.id}
@@ -681,6 +705,22 @@ export default function SettingsPage() {
                       )}
                     />
                   ))}
+                  
+                  <div className="w-px h-8 bg-zinc-200 dark:bg-zinc-800 mx-2" />
+                  
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="color"
+                      value={editTheme.startsWith('#') ? editTheme : '#71717a'}
+                      onChange={(e) => setEditTheme(e.target.value)}
+                      className="w-8 h-8 rounded cursor-pointer bg-transparent border-0 p-0"
+                      title="Custom Color"
+                    />
+                    <div className="flex flex-col">
+                      <span className="text-[12px] font-medium text-black dark:text-white leading-tight">Custom</span>
+                      <span className="text-[11px] text-[#666] font-mono leading-tight uppercase">{editTheme.startsWith('#') ? editTheme : 'Hex'}</span>
+                    </div>
+                  </div>
                 </div>
               </SettingCard>
 
@@ -950,6 +990,7 @@ export default function SettingsPage() {
                   <div className="mt-6 pt-6 border-t border-zinc-200 dark:border-[#333] flex flex-col items-center">
                     <p className="text-[14px] text-[#666] mb-4 text-center">Scan this QR code with your authenticator app, then enter the 6-digit code below.</p>
                     <div className="bg-white p-2 rounded-lg border border-zinc-200 mb-4 inline-block shadow-sm">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={mfaSetupData.qrCodeUrl} alt="MFA QR Code" className="w-[150px] h-[150px]" />
                     </div>
                     <div className="flex items-center gap-3 w-full max-w-[320px]">
@@ -1038,7 +1079,7 @@ export default function SettingsPage() {
                 messageKey="sessions"
               >
                 <div className="space-y-4">
-                  {sessions.map(session => (
+                  {sessions.slice((sessionsPage - 1) * sessionsLimit, sessionsPage * sessionsLimit).map(session => (
                     <div key={session.id} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 border border-zinc-200 dark:border-[#333] rounded-lg bg-zinc-50/50 dark:bg-[#0a0a0a] gap-4">
                       <div className="flex items-center gap-4">
                         <Monitor className="w-6 h-6 text-[#888]" />
@@ -1061,6 +1102,29 @@ export default function SettingsPage() {
                       )}
                     </div>
                   ))}
+                  {sessionsTotalPages > 1 && (
+                    <div className="pt-2 flex items-center justify-between">
+                      <p className="text-sm text-[#666]">
+                        Page <span className="font-medium text-black dark:text-white">{sessionsPage}</span> of <span className="font-medium text-black dark:text-white">{sessionsTotalPages}</span>
+                      </p>
+                      <div className="flex gap-2">
+                        <button 
+                          onClick={() => setSessionsPage(p => Math.max(1, p - 1))}
+                          disabled={sessionsPage === 1}
+                          className="p-1.5 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => setSessionsPage(p => Math.min(sessionsTotalPages, p + 1))}
+                          disabled={sessionsPage === sessionsTotalPages}
+                          className="p-1.5 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </SettingCard>
 

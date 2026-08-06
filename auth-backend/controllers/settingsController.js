@@ -35,6 +35,12 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ error: 'User not found' });
     }
 
+    // Fetch published blog count
+    const publishedBlogs = await prisma.blog.findMany({
+      where: { authorId: user.id, status: 'published' }
+    });
+    const publishedBlogCount = publishedBlogs.length;
+
     // Map to safe format
     const profile = {
       id: user.id,
@@ -60,6 +66,7 @@ exports.getProfile = async (req, res) => {
       avatarUrl: user.avatarUrl || '',
       googleConnected: !!user.googleId,
       githubConnected: !!user.githubId,
+      publishedBlogCount,
     };
 
     res.json(profile);

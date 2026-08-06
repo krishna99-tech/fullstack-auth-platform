@@ -16,6 +16,8 @@ function publicPost(post, author) {
     slug: post.slug,
     title: post.title,
     excerpt: post.excerpt || '',
+    featuredImage: post.featuredImage || null,
+    category: post.category || null,
     tags: post.tags || [],
     content: post.content || '',
     status: post.status,
@@ -38,7 +40,10 @@ function parseTags(input) {
   return String(input).split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
 }
 
-function matchesQuery(post, q, tag) {
+function matchesQuery(post, q, tag, category) {
+  if (category) {
+    if ((post.category || '').toLowerCase() !== category.toLowerCase()) return false;
+  }
   if (tag) {
     const tags = post.tags || [];
     if (!tags.includes(tag.toLowerCase())) return false;
@@ -54,8 +59,16 @@ exports.listPublished = async (req, res) => {
   try {
     const q = req.query.q || '';
     const tag = req.query.tag || '';
+    const category = req.query.category || '';
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 5;
+    const skip = (page - 1) * limit;
+
     let posts = await prisma.blog.findMany({ where: { status: 'published' }, orderBy: { createdAt: 'desc' } });
-    posts = posts.filter((p) => matchesQuery(p, q, tag));
+    posts = posts.filter((p) => matchesQuery(p, q, tag, category));
+
+    const total = posts.length;
+    posts = posts.slice(skip, skip + limit);
     const withAuthors = await Promise.all(
       posts.map(async (post) => {
         const author = await getAuthor(post.authorId);
@@ -64,6 +77,8 @@ exports.listPublished = async (req, res) => {
           slug: post.slug,
           title: post.title,
           excerpt: post.excerpt || '',
+          featuredImage: post.featuredImage || null,
+          category: post.category || null,
           tags: post.tags || [],
           publishedAt: post.publishedAt,
           createdAt: post.createdAt,
@@ -73,7 +88,13 @@ exports.listPublished = async (req, res) => {
         };
       })
     );
-    res.json({ posts: withAuthors });
+    res.json({ 
+      posts: withAuthors,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit)
+    });
   } catch (err) {
     console.error('listPublished error:', err);
     res.status(500).json({ error: 'Failed to load posts' });
@@ -104,6 +125,8 @@ exports.listMine = async (req, res) => {
         slug: p.slug,
         title: p.title,
         excerpt: p.excerpt || '',
+        featuredImage: p.featuredImage || null,
+        category: p.category || null,
         tags: p.tags || [],
         status: p.status,
         publishedAt: p.publishedAt,
@@ -131,7 +154,7 @@ exports.getById = async (req, res) => {
 
 exports.create = async (req, res) => {
   try {
-    const { title, content, excerpt, status, tags } = req.body;
+    const { title, content, excerpt, status, tags, featuredImage, category } = req.body;
     if (!title?.trim()) return res.status(400).json({ error: 'Title is required' });
 
     let baseSlug = slugify(title);
@@ -149,10 +172,12 @@ exports.create = async (req, res) => {
         slug,
         content: content || '',
         excerpt: excerpt || '',
+        featuredImage: featuredImage || null,
+        category: category || null,
         tags: parseTags(tags),
         authorId: req.user.userId,
-        status: isPublished ? 'published' : 'draft',
-        publishedAt: isPublished ? now : null,
+        status: ['published', 'draft', 'archived'].includes(status) ? status : 'draft',
+        publishedAt: status === 'published' ? now : null,
       },
     });
     res.status(201).json({ post });
@@ -168,18 +193,20 @@ exports.update = async (req, res) => {
     if (!post) return res.status(404).json({ error: 'Post not found' });
     if (post.authorId !== req.user.userId) return res.status(403).json({ error: 'Forbidden' });
 
-    const { title, content, excerpt, status, tags } = req.body;
+    const { title, content, excerpt, status, tags, featuredImage, category } = req.body;
     const updates = {};
     if (title !== undefined) updates.title = title.trim();
     if (content !== undefined) updates.content = content;
     if (excerpt !== undefined) updates.excerpt = excerpt;
+    if (featuredImage !== undefined) updates.featuredImage = featuredImage;
+    if (category !== undefined) updates.category = category;
     if (tags !== undefined) updates.tags = parseTags(tags);
     if (status !== undefined) {
-      updates.status = status === 'published' ? 'published' : 'draft';
-      if (status === 'published' && post.status !== 'published') {
+      updates.status = ['published', 'draft', 'archived'].includes(status) ? status : 'draft';
+      if (updates.status === 'published' && post.status !== 'published') {
         updates.publishedAt = new Date().toISOString();
       }
-      if (status === 'draft') updates.publishedAt = null;
+      if (updates.status === 'draft') updates.publishedAt = null;
     }
 
     const updated = await prisma.blog.update({ where: { id: post.id }, data: updates });

@@ -13,6 +13,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   MonitorSmartphone,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
 function getIconForAction(action: string) {
@@ -48,6 +50,10 @@ export default function AuditPage() {
   const [events, setEvents] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const limit = 5;
+  const totalPages = Math.max(1, Math.ceil(events.length / limit));
+
 
   useEffect(() => {
     if (authLoading) return;
@@ -67,8 +73,8 @@ export default function AuditPage() {
   }, [authLoading, getAccessToken, filter]);
 
   const stats = {
-    logins: events.filter((e) => e.action.includes('login_success')).length,
-    failures: events.filter((e) => e.action.includes('login_failure')).length,
+    logins: events.filter((e) => e.action.includes('login') && !e.action.includes('fail')).length,
+    failures: events.filter((e) => e.action.includes('fail') && e.action.includes('login')).length,
     tokens: events.filter((e) => e.action.startsWith('token.')).length,
   };
 
@@ -106,7 +112,10 @@ export default function AuditPage() {
         {['', 'auth.', 'token.', 'user.', 'role.'].map((f) => (
           <button
             key={f || 'all'}
-            onClick={() => setFilter(f)}
+            onClick={() => {
+              setFilter(f);
+              setCurrentPage(1);
+            }}
             className={`text-[12px] px-3 py-1.5 rounded-full border transition-colors ${
               filter === f
                 ? 'bg-black dark:bg-white text-white dark:text-black border-transparent'
@@ -128,7 +137,7 @@ export default function AuditPage() {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-[#333]">
-            {events.map((event) => {
+            {events.slice((currentPage - 1) * limit, currentPage * limit).map((event) => {
               const Icon = getIconForAction(event.action);
               const type = getOutcomeType(event.outcome);
               return (
@@ -168,6 +177,29 @@ export default function AuditPage() {
             )}
           </tbody>
         </table>
+        {totalPages > 1 && (
+          <div className="p-4 border-t border-zinc-200 dark:border-[#333] flex items-center justify-between bg-zinc-50/30 dark:bg-[#0a0a0a]/50">
+            <p className="text-sm text-[#666]">
+              Page <span className="font-medium text-black dark:text-white">{currentPage}</span> of <span className="font-medium text-black dark:text-white">{totalPages}</span>
+            </p>
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button 
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 rounded-md border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] text-black dark:text-white disabled:opacity-50 disabled:cursor-not-allowed hover:bg-zinc-50 dark:hover:bg-[#111] transition-colors"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

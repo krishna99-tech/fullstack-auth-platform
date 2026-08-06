@@ -9,7 +9,16 @@ export function BlogCard({ post }: { post: BlogPostSummary }) {
       href={`/blog/${post.slug}`}
       className="group block rounded-xl border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#0a0a0a] p-6 hover:border-zinc-300 dark:hover:border-zinc-600 transition-colors"
     >
-      <p className="text-xs text-zinc-500 mb-2">{date} · {post.author.name}</p>
+      {post.featuredImage && (
+        <div className="mb-4 aspect-video w-full overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={post.featuredImage} alt={post.title} className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        </div>
+      )}
+      <p className="text-xs text-zinc-500 mb-2">
+        {post.category && <span className="font-medium text-purple-600 dark:text-purple-400 mr-2">{post.category}</span>}
+        {date} · {post.author.name}
+      </p>
       <h2 className="text-lg font-semibold text-black dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
         {post.title}
       </h2>

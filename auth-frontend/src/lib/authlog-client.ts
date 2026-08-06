@@ -1,5 +1,6 @@
 import { AUTHLOG_API, TENANT_SLUG, authlogPath } from './config';
 import { tokens } from './token-store';
+import { legacyGetSecurityLogs } from './legacy-api';
 
 export class AuthlogError extends Error {
   status: number;
@@ -319,7 +320,36 @@ export async function getTenantBySlug(accessToken: string, slug: string) {
   return parseResponse<Tenant>(res);
 }
 
+interface LegacyAuditLog {
+  id?: string;
+  userId: string;
+  event: string;
+  ipAddress: string;
+  location: string;
+  type: string;
+  timestamp: string;
+  createdAt?: string;
+}
+
 export async function listAuditEvents(accessToken: string, params?: { action?: string; limit?: number }) {
+  if (!AUTHLOG_API) {
+    const data = await legacyGetSecurityLogs(1, params?.limit || 100);
+    if (!data || !data.logs) return { events: [] };
+    const events: AuditEvent[] = data.logs.map((log: LegacyAuditLog) => ({
+      eventId: Math.random().toString(36).substring(7),
+      timestamp: log.timestamp || new Date().toISOString(),
+      tenantId: 'default',
+      action: log.event.replace(/ /g, '_').toLowerCase(),
+      actor: { type: 'user', id: log.userId, ip: log.ipAddress },
+      outcome: log.event.toLowerCase().includes('failed') ? 'failure' : 'success',
+      metadata: { location: log.location }
+    }));
+    if (params?.action) {
+      return { events: events.filter(e => e.action.includes(params.action!)) };
+    }
+    return { events };
+  }
+
   const query = new URLSearchParams();
   if (params?.action) query.set('action', params.action);
   if (params?.limit) query.set('limit', String(params.limit));

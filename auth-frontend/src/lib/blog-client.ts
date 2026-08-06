@@ -19,8 +19,10 @@ export interface BlogPostSummary {
   slug: string;
   title: string;
   excerpt: string;
+  featuredImage?: string | null;
+  category?: string | null;
   tags?: string[];
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'published' | 'archived';
   publishedAt?: string | null;
   createdAt: string;
   updatedAt?: string;
@@ -29,7 +31,7 @@ export interface BlogPostSummary {
 
 export interface BlogPost extends BlogPostSummary {
   content: string;
-  status: 'draft' | 'published';
+  status: 'draft' | 'published' | 'archived';
   updatedAt: string;
 }
 
@@ -37,8 +39,10 @@ export interface BlogPostInput {
   title: string;
   content: string;
   excerpt?: string;
+  featuredImage?: string | null;
+  category?: string | null;
   tags?: string | string[];
-  status?: 'draft' | 'published';
+  status?: 'draft' | 'published' | 'archived';
 }
 
 function blogUrl(path: string) {
@@ -60,15 +64,28 @@ async function parseJson<T>(res: Response): Promise<T> {
 }
 
 /** Public — server-safe */
-export async function listPublishedPosts(opts?: { q?: string; tag?: string }): Promise<BlogPostSummary[]> {
+export async function listPublishedPosts(
+  opts?: { q?: string; tag?: string; category?: string; page?: number; limit?: number }
+): Promise<{ posts: BlogPostSummary[]; total: number; page: number; totalPages: number }> {
   const params = new URLSearchParams();
   if (opts?.q) params.set('q', opts.q);
   if (opts?.tag) params.set('tag', opts.tag);
+  if (opts?.category) params.set('category', opts.category);
+  if (opts?.page) params.set('page', opts.page.toString());
+  if (opts?.limit) params.set('limit', opts.limit.toString());
+  
   const qs = params.toString();
   const res = await fetch(blogUrl(qs ? `/?${qs}` : '/'), { cache: 'no-store' });
-  if (!res.ok) return [];
+  
+  if (!res.ok) return { posts: [], total: 0, page: 1, totalPages: 0 };
+  
   const data = await res.json();
-  return data.posts || [];
+  return { 
+    posts: data.posts || [], 
+    total: data.total || 0,
+    page: data.page || 1,
+    totalPages: data.totalPages || 0
+  };
 }
 
 /** Public — server-safe */
