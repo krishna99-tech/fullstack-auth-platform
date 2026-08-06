@@ -44,6 +44,12 @@ interface Session {
   isCurrent: boolean;
 }
 
+interface TopLink {
+  title: string;
+  url: string;
+  clicks: number;
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const { user, getAccessToken } = useAuth();
@@ -56,7 +62,7 @@ export default function DashboardPage() {
     totalViews: 0,
     totalClicks: 0,
     ctr: '0',
-    topLinks: [] as any[]
+    topLinks: [] as TopLink[]
   });
   const [copied, setCopied] = useState(false);
 
@@ -196,14 +202,14 @@ export default function DashboardPage() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-3 relative z-10">
-              <div className="flex-1 flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-lg shadow-sm">
-                <span className="text-[14px] text-zinc-900 dark:text-zinc-100 font-medium truncate">
+              <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-lg shadow-sm overflow-hidden">
+                <span className="text-[14px] text-zinc-900 dark:text-zinc-100 font-medium truncate block min-w-0">
                   {profileUrl}
                 </span>
               </div>
               <button 
                 onClick={handleCopy}
-                className="px-5 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] text-black dark:text-white hover:bg-zinc-50 dark:hover:bg-[#111] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                className="flex-shrink-0 px-5 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] text-black dark:text-white hover:bg-zinc-50 dark:hover:bg-[#111] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-[#888]" />}
                 {copied ? 'Copied!' : 'Copy Link'}
@@ -212,7 +218,7 @@ export default function DashboardPage() {
                 href={`/@${profile?.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-5 py-3 bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2"
+                className="flex-shrink-0 px-5 py-3 bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
               >
                 View Live <ExternalLink className="w-4 h-4" />
               </a>

@@ -259,22 +259,25 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
           <div className="px-8 pb-8 relative">
             {/* Avatar */}
             <div 
-              className={`absolute -top-12 h-24 w-24 rounded-full overflow-hidden bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center text-3xl font-bold text-black dark:text-white shadow-md`}
+              className={`absolute -top-12 h-24 w-24 rounded-full overflow-hidden bg-gradient-to-tr ${avatarBorderClass} flex items-center justify-center shadow-md`}
               style={avatarStyle}
             >
               {user.avatarUrl ? (
-                <Image src={user.avatarUrl} alt={user.name || user.username} width={96} height={96} className="h-full w-full object-cover" />
+                <Image src={user.avatarUrl} alt={user.name || user.username} width={96} height={96} className="h-full w-full object-cover text-xs text-transparent" />
               ) : (
-                user.avatarInitial || (user.username ? user.username.charAt(0).toUpperCase() : '?')
+                <span className="text-3xl font-bold text-black dark:text-white">
+                  {(user.avatarInitial || user.username || '?').charAt(0).toUpperCase()}
+                </span>
               )}
             </div>
 
             {/* Profile Info wrapped for Tabs */}
+            <div className="pt-12 sm:pt-14">
             <ProfileTabs
               articleCount={userBlogs.length}
               projectCount={userProjects.length}
               about={
-                <div className="pt-16">
+                <div className="pt-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <h1 className="text-2xl font-bold tracking-tight">{user.name || user.username}</h1>
@@ -399,6 +402,7 @@ export default async function PublicProfilePage({ params }: { params: Promise<{ 
                 </div>
               }
             />
+            </div>
             
             <div className="mt-8 pt-8 border-t border-zinc-200 dark:border-[#333] flex justify-between items-center">
               <p className="text-sm text-zinc-500">This is a public profile namespace.</p>
