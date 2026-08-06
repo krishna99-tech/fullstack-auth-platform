@@ -1,6 +1,9 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPostBySlug, formatBlogDate } from '@/lib/blog-client';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 
 export const dynamic = 'force-dynamic';
 
@@ -54,8 +57,10 @@ export default async function BlogPostPage({ params }: { params: Promise<{ slug:
           </div>
         )}
       </header>
-      <div className="prose prose-zinc dark:prose-invert max-w-none whitespace-pre-wrap leading-relaxed">
-        {post.content}
+      <div className="prose prose-zinc dark:prose-invert max-w-none leading-relaxed">
+        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+          {post.content}
+        </ReactMarkdown>
       </div>
     </article>
   );

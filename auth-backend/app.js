@@ -55,9 +55,6 @@ app.use('/api/blog', blogRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/upload', uploadRoutes);
 
-// Serve static files (like uploaded images) from /tmp for AWS Lambda
-app.use('/uploads', express.static('/tmp/uploads'));
-
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });

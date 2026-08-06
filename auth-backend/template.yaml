@@ -69,6 +69,7 @@ Globals:
         ANALYTICS_TABLE: !Ref AnalyticsTable
         BLOGS_TABLE: !Ref BlogsTable
         PROJECTS_TABLE: !Ref ProjectsTable
+        UPLOADS_BUCKET: !Ref UploadsBucket
         FRONTEND_URL: !Ref FrontendUrl
         BACKEND_URL: !Ref BackendUrl
         JWT_SECRET: !Ref JwtSecret
@@ -83,6 +84,39 @@ Globals:
         GITHUB_CLIENT_SECRET: !Ref GithubClientSecret
 
 Resources:
+  UploadsBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: false
+        BlockPublicPolicy: false
+        IgnorePublicAcls: false
+        RestrictPublicBuckets: false
+      CorsConfiguration:
+        CorsRules:
+          - AllowedHeaders:
+              - "*"
+            AllowedMethods:
+              - GET
+              - PUT
+              - HEAD
+            AllowedOrigins:
+              - "*"
+            ExposedHeaders:
+              - ETag
+
+  UploadsBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref UploadsBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action: 's3:GetObject'
+            Effect: Allow
+            Resource: !Sub 'arn:aws:s3:::${UploadsBucket}/*'
+            Principal: '*'
+
   AuditLogsTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -290,6 +324,8 @@ Resources:
             TableName: !Ref BlogsTable
         - DynamoDBCrudPolicy:
             TableName: !Ref ProjectsTable
+        - S3CrudPolicy:
+            BucketName: !Ref UploadsBucket
       Events:
         ProxyApiRoot:
           Type: Api

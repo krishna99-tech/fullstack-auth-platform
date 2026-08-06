@@ -8,22 +8,33 @@ export class UploadError extends Error {
 }
 
 export async function uploadImage(file: File, token: string): Promise<string> {
-  const formData = new FormData();
-  formData.append('image', file);
-
-  const res = await fetch(`${API_URL}/upload`, {
-    method: 'POST',
+  // 1. Get the presigned URL and final public URL from the backend
+  const presignRes = await fetch(`${API_URL}/upload/presign?filename=${encodeURIComponent(file.name)}&contentType=${encodeURIComponent(file.type)}`, {
     headers: {
       Authorization: `Bearer ${token}`,
     },
-    body: formData,
   });
 
-  const data = await res.json();
-  
-  if (!res.ok) {
-    throw new UploadError(data.message || 'Upload failed');
+  const presignData = await presignRes.json();
+  if (!presignRes.ok) {
+    throw new UploadError(presignData.message || 'Failed to get upload signature');
   }
-  
-  return data.url;
+
+  const { presignedUrl, publicUrl } = presignData;
+
+  // 2. Upload the file directly to AWS S3 using the presigned URL
+  const uploadRes = await fetch(presignedUrl, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': file.type,
+    },
+    body: file, // Send the raw file
+  });
+
+  if (!uploadRes.ok) {
+    throw new UploadError('Failed to upload image to S3');
+  }
+
+  // 3. Return the public S3 URL
+  return publicUrl;
 }

@@ -7,9 +7,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useAuthGuard } from '@/hooks/use-auth-guard';
 import { getPostById, updatePost, BlogError } from '@/lib/blog-client';
 import { uploadImage } from '@/lib/upload-client';
-import { Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Image as ImageIcon, Loader2, Paperclip } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import { MediaInserter } from '@/components/blog/media-inserter';
+import { MediaManager } from '@/components/blog/media-manager';
 
 export default function EditBlogPage() {
   useAuthGuard();
@@ -144,12 +147,12 @@ export default function EditBlogPage() {
           <input className="input-field w-full" value={excerpt} onChange={(e) => setExcerpt(e.target.value)} />
         </div>
         <div>
-          <label className="block text-sm font-medium mb-1">Content</label>
-          <textarea
-            className="input-field w-full min-h-[320px] resize-y font-mono text-sm"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-          />
+          <div className="flex items-center justify-between mb-1">
+            <label className="block text-sm font-medium">Content</label>
+            <MediaInserter onInsert={(markdownSnippet) => setContent(prev => prev + markdownSnippet)} />
+          </div>
+          <textarea className="input-field w-full min-h-[240px] resize-y font-mono text-sm" value={content} onChange={(e) => setContent(e.target.value)} placeholder="Write your post..." />
+          <MediaManager content={content} setContent={setContent} />
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
           <div>
@@ -215,7 +218,7 @@ export default function EditBlogPage() {
           )}
           
           {content ? (
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
+            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>{content}</ReactMarkdown>
           ) : (
             <p className="text-zinc-400 italic">No content yet...</p>
           )}
