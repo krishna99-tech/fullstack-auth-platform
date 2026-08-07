@@ -1,3 +1,5 @@
+"use client";
+
 import { LEGACY_API } from '@/lib/config';
 
 interface TrackLinkProps {

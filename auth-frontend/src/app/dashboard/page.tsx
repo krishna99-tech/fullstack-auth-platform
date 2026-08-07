@@ -166,251 +166,283 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-8 w-full pb-12">
+    <div className="flex flex-col gap-8 w-full pb-12 animate-in fade-in slide-in-from-bottom-6 duration-700 font-sans">
       
-      {/* Top Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-zinc-200 dark:border-[#333] pb-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-black dark:text-white capitalize">
+          <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-white mb-1">
             Overview
           </h1>
-          <p className="text-[#666] mt-1 text-[14px]">
-            Welcome back! Here is how your profile is performing today.
+          <p className="text-[15px] text-zinc-500 dark:text-zinc-400">
+            Welcome back! Here&apos;s how your profile is performing today.
           </p>
         </div>
         <div className="flex items-center gap-3 w-full sm:w-auto">
-          <Link href="/dashboard/settings" className="px-4 py-2 bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0] text-sm font-medium rounded-md transition-colors shadow-sm flex items-center gap-2">
+          <Link href="/dashboard/settings" className="px-5 py-2.5 bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 text-sm font-medium rounded-xl transition-all shadow-[0_2px_10px_-3px_rgba(0,0,0,0.2)] hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.3)] flex items-center justify-center gap-2">
             <LayoutDashboard className="w-4 h-4" /> Edit Profile
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Share Link Banner - Stripe/Linear Style Glassmorphism */}
+      <div className="relative overflow-hidden rounded-2xl border border-zinc-200/50 dark:border-white/10 bg-white/60 dark:bg-zinc-900/40 backdrop-blur-xl shadow-sm p-6 sm:p-8 group">
+        {/* Animated Gradient Meshes */}
+        <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none rounded-2xl z-0">
+          <div className="absolute -right-[10%] -top-[40%] w-[50%] h-[150%] bg-gradient-to-b from-blue-400/20 to-purple-500/20 blur-[80px] rotate-12 transition-transform duration-1000 group-hover:rotate-45 group-hover:scale-110" />
+          <div className="absolute -left-[10%] -bottom-[40%] w-[50%] h-[150%] bg-gradient-to-t from-emerald-400/10 to-teal-500/10 blur-[80px] -rotate-12 transition-transform duration-1000 group-hover:-rotate-45 group-hover:scale-110" />
+        </div>
         
-        {/* Left Column - Main Content */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          
-          {/* Share Profile Widget */}
-          <div className="border border-emerald-200 dark:border-emerald-900/50 bg-emerald-50/50 dark:bg-emerald-950/20 rounded-xl p-6 shadow-sm relative overflow-hidden">
-            <div className="absolute -right-4 -top-4 w-32 h-32 bg-emerald-500/10 rounded-full blur-2xl"></div>
-            
-            <h3 className="text-[16px] font-semibold text-black dark:text-white mb-2 relative z-10 flex items-center gap-2">
-              <Link2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" /> Share your link
-            </h3>
-            <p className="text-[14px] text-[#666] mb-5 relative z-10">
-              Put this link in your Instagram, TikTok, or Twitter bio to direct followers to your content.
-            </p>
-            
-            <div className="flex flex-col sm:flex-row gap-3 relative z-10">
-              <div className="flex-1 min-w-0 flex items-center gap-3 px-4 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] rounded-lg shadow-sm overflow-hidden">
-                <span className="text-[14px] text-zinc-900 dark:text-zinc-100 font-medium truncate block min-w-0">
-                  {profileUrl}
-                </span>
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+          <div className="flex-1">
+            <h3 className="text-[18px] font-semibold text-zinc-900 dark:text-white mb-2 flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 p-[1px]">
+                <div className="w-full h-full bg-white dark:bg-zinc-950 rounded-full flex items-center justify-center">
+                  <Link2 className="w-4 h-4 text-blue-500" />
+                </div>
               </div>
+              Your Live Profile
+            </h3>
+            <p className="text-[14px] text-zinc-600 dark:text-zinc-400 max-w-lg leading-relaxed">
+              Share this link in your social bios to direct followers to your content seamlessly.
+            </p>
+          </div>
+          
+          <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-3 px-4 py-3 bg-white/80 dark:bg-black/50 border border-zinc-200/80 dark:border-white/10 rounded-xl shadow-inner sm:w-72 backdrop-blur-md">
+              <span className="text-[14px] text-zinc-700 dark:text-zinc-300 font-medium truncate block w-full">
+                {profileUrl.replace(/^https?:\/\//, '')}
+              </span>
+            </div>
+            <div className="flex gap-2">
               <button 
                 onClick={handleCopy}
-                className="flex-shrink-0 px-5 py-3 bg-white dark:bg-[#0a0a0a] border border-zinc-200 dark:border-[#333] text-black dark:text-white hover:bg-zinc-50 dark:hover:bg-[#111] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                className="flex-1 sm:flex-none px-5 py-3 bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 text-zinc-900 dark:text-white hover:bg-zinc-50 dark:hover:bg-zinc-700 hover:border-zinc-300 dark:hover:border-zinc-600 text-[13px] font-semibold rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
               >
-                {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-[#888]" />}
-                {copied ? 'Copied!' : 'Copy Link'}
+                {copied ? <CheckCircle2 className="w-4 h-4 text-emerald-500" /> : <Copy className="w-4 h-4 text-zinc-500" />}
+                {copied ? 'Copied' : 'Copy'}
               </button>
               <a 
                 href={`/@${profile?.username}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-shrink-0 px-5 py-3 bg-black dark:bg-white text-white dark:text-black hover:bg-[#333] dark:hover:bg-[#e0e0e0] text-[14px] font-medium rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 whitespace-nowrap"
+                className="flex-shrink-0 w-[46px] h-[46px] bg-zinc-900 dark:bg-white text-white dark:text-black hover:bg-black dark:hover:bg-zinc-200 rounded-xl transition-all shadow-sm flex items-center justify-center hover:scale-105 active:scale-95"
+                title="View Live"
               >
-                View Live <ExternalLink className="w-4 h-4" />
+                <ExternalLink className="w-4 h-4" />
               </a>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Mini Analytics Snapshot (Mock Data) */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-            <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl p-5 shadow-sm hover:-translate-y-0.5 transition-all">
-              <div className="flex flex-row items-center justify-between pb-3 mb-2">
-                <span className="text-[13px] font-medium text-[#666] tracking-tight">Total Views (7d)</span>
-                <Eye className="w-4 h-4 text-blue-500" />
-              </div>
-              <div>
-                <div className="text-3xl font-semibold tracking-tighter text-black dark:text-white">{profileStats.totalViews}</div>
-                <p className="text-[12px] text-zinc-500 mt-1.5 font-medium">
-                  Recorded visits
-                </p>
-              </div>
-            </div>
-            
-            <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl p-5 shadow-sm hover:-translate-y-0.5 transition-all">
-              <div className="flex flex-row items-center justify-between pb-3 mb-2">
-                <span className="text-[13px] font-medium text-[#666] tracking-tight">Total Clicks (7d)</span>
-                <MousePointerClick className="w-4 h-4 text-emerald-500" />
-              </div>
-              <div>
-                <div className="text-3xl font-semibold tracking-tighter text-black dark:text-white">{profileStats.totalClicks}</div>
-                <p className="text-[12px] text-zinc-500 mt-1.5 font-medium">
-                  Link interactions
-                </p>
-              </div>
-            </div>
-            
-            <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl p-5 shadow-sm hover:-translate-y-0.5 transition-all">
-              <div className="flex flex-row items-center justify-between pb-3 mb-2">
-                <span className="text-[13px] font-medium text-[#666] tracking-tight">Avg. CTR</span>
-                <Percent className="w-4 h-4 text-purple-500" />
-              </div>
-              <div>
-                <div className="text-3xl font-semibold tracking-tighter text-black dark:text-white">{profileStats.ctr}%</div>
-                <p className="text-[12px] text-zinc-500 mt-1.5 font-medium">
-                  Average conversion
-                </p>
-              </div>
+      {/* Floating Metrics Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="relative group bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 flex flex-row items-center justify-between pb-4">
+            <span className="text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Views</span>
+            <div className="w-10 h-10 rounded-full bg-blue-50 dark:bg-blue-500/10 flex items-center justify-center shadow-inner">
+              <Eye className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
           </div>
+          <div className="relative z-10">
+            <div className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{profileStats.totalViews}</div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="flex items-center text-[12px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                <ArrowUpRight className="w-3 h-3 mr-1" /> 7d
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative group bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 flex flex-row items-center justify-between pb-4">
+            <span className="text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Total Clicks</span>
+            <div className="w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 flex items-center justify-center shadow-inner">
+              <MousePointerClick className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <div className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{profileStats.totalClicks}</div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="flex items-center text-[12px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                <ArrowUpRight className="w-3 h-3 mr-1" /> 7d
+              </span>
+            </div>
+          </div>
+        </div>
+        
+        <div className="relative group bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all hover:-translate-y-1 duration-300 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative z-10 flex flex-row items-center justify-between pb-4">
+            <span className="text-[13px] font-semibold text-zinc-500 dark:text-zinc-400 uppercase tracking-wider">Avg. CTR</span>
+            <div className="w-10 h-10 rounded-full bg-purple-50 dark:bg-purple-500/10 flex items-center justify-center shadow-inner">
+              <Percent className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+            </div>
+          </div>
+          <div className="relative z-10">
+            <div className="text-4xl font-bold tracking-tight text-zinc-900 dark:text-white">{profileStats.ctr}%</div>
+            <div className="flex items-center gap-2 mt-2">
+              <span className="flex items-center text-[12px] font-medium text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-500/10 px-2 py-0.5 rounded-full">
+                7d avg
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
 
-          {/* Quick Edit Links */}
-          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm">
-            <div className="p-5 border-b border-zinc-200 dark:border-[#333] flex items-center justify-between">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-2">
+        
+        {/* Left Column */}
+        <div className="lg:col-span-7 xl:col-span-8 flex flex-col gap-6">
+          
+          {/* Recent Links (Premium List) */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
+            <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex items-center justify-between bg-zinc-50/50 dark:bg-zinc-900/50">
               <div>
-                <h3 className="text-[15px] font-semibold text-black dark:text-white">Recent Links</h3>
-                <p className="text-[13px] text-[#666] mt-0.5">Your most recently added custom links.</p>
+                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white">Recent Links</h3>
+                <p className="text-[13px] text-zinc-500 mt-0.5">Performance of your latest additions.</p>
               </div>
-              <Link href="/dashboard/settings" className="text-[13px] font-medium text-black dark:text-white border border-zinc-200 dark:border-[#333] px-3 py-1.5 rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors shadow-sm flex items-center gap-1.5">
-                <Plus className="w-3.5 h-3.5" /> Add Link
+              <Link href="/dashboard/settings" className="w-8 h-8 flex items-center justify-center rounded-xl bg-white dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 shadow-sm hover:bg-zinc-50 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300 transition-all hover:scale-105 active:scale-95">
+                <Plus className="w-4 h-4" />
               </Link>
             </div>
+            
             <div className="flex flex-col">
-              {profileStats.topLinks.slice(0, 3).map((link, idx) => (
-                <div key={idx} className="flex items-center justify-between p-5 border-b border-zinc-100 dark:border-[#111] hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-zinc-100 dark:bg-[#111] flex items-center justify-center text-[#666]">
+              {profileStats.topLinks.slice(0, 4).map((link, idx) => (
+                <div key={idx} className="flex items-center justify-between px-6 py-5 border-b border-zinc-100 dark:border-zinc-800/50 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/30 transition-colors group last:border-0 cursor-pointer">
+                  <div className="flex items-center gap-4 min-w-0">
+                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-zinc-100 to-zinc-50 dark:from-zinc-800 dark:to-zinc-900 border border-zinc-200/50 dark:border-zinc-700/50 flex items-center justify-center text-zinc-500 shadow-inner group-hover:scale-110 group-hover:text-zinc-900 dark:group-hover:text-white transition-all duration-300 shrink-0">
                       <ExternalLink className="w-4 h-4" />
                     </div>
-                    <div>
-                      <h4 className="font-semibold text-[14px] text-black dark:text-white">{link.title}</h4>
-                      <p className="text-[12px] text-[#888] mt-0.5">{link.url.replace(/^https?:\/\//, '')}</p>
+                    <div className="min-w-0">
+                      <h4 className="font-semibold text-[14px] text-zinc-900 dark:text-white truncate mb-0.5">{link.title}</h4>
+                      <p className="text-[13px] text-zinc-500 dark:text-zinc-400 truncate">
+                        {link.url.replace(/^https?:\/\//, '')}
+                      </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <span className="block text-[14px] font-semibold text-black dark:text-white">{link.clicks} clicks</span>
+                  <div className="shrink-0 pl-4 flex flex-col items-end">
+                    <span className="text-[14px] font-bold text-zinc-900 dark:text-white">
+                      {link.clicks}
+                    </span>
+                    <span className="text-[11px] font-medium text-zinc-500 uppercase tracking-wider">
+                      Clicks
+                    </span>
                   </div>
                 </div>
               ))}
+              
               {profileStats.topLinks.length === 0 && (
-                <div className="p-8 text-center text-[#666] text-[13px]">
-                  No link clicks yet.
+                <div className="py-16 flex flex-col items-center justify-center text-center">
+                  <div className="w-16 h-16 rounded-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 flex items-center justify-center mb-4 text-zinc-400 shadow-inner">
+                    <Link2 className="w-6 h-6" />
+                  </div>
+                  <p className="text-[15px] font-semibold text-zinc-900 dark:text-white">No links added yet</p>
+                  <p className="text-[14px] text-zinc-500 mt-1 max-w-xs mx-auto">Create your first custom link in the settings to start tracking clicks.</p>
                 </div>
               )}
-              
-              <Link href="/dashboard/analytics" className="p-3 text-center text-[13px] text-[#666] hover:text-black dark:hover:text-white transition-colors bg-zinc-50/50 dark:bg-[#0a0a0a]/50">
-                View detailed analytics
-              </Link>
             </div>
+            
+            <Link href="/dashboard/analytics" className="px-6 py-4 border-t border-zinc-100 dark:border-zinc-800 bg-zinc-50/50 dark:bg-zinc-950 text-[13px] font-semibold text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white flex items-center justify-center gap-1.5 transition-colors mt-auto hover:bg-zinc-100 dark:hover:bg-zinc-900">
+              View detailed analytics <ArrowUpRight className="w-4 h-4" />
+            </Link>
           </div>
-
         </div>
 
-        {/* Right Column - Sidebar */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
+        {/* Right Column */}
+        <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-6">
           
-          {/* Profile Setup Checklist */}
-          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm">
-            <div className="p-5 border-b border-zinc-200 dark:border-[#333]">
-              <h3 className="text-[15px] font-semibold text-black dark:text-white">Setup Guide</h3>
-              <p className="text-[13px] text-[#666] mt-0.5">Complete your profile to get the most out of the platform.</p>
-              
-              {/* Progress Bar */}
-              <div className="mt-4 flex flex-col gap-2">
-                <div className="flex justify-between text-[12px] font-medium">
-                  <span className="text-black dark:text-white">Profile Strength</span>
-                  <span className="text-emerald-600 dark:text-emerald-500">75%</span>
-                </div>
-                <div className="w-full h-1.5 bg-zinc-100 dark:bg-[#111] rounded-full overflow-hidden">
-                  <div className="h-full bg-emerald-500 rounded-full w-[75%]" />
-                </div>
+          {/* Setup Guide (Premium Card) */}
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-sm overflow-hidden flex flex-col relative">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-400 to-teal-500" />
+            <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-start">
+              <div>
+                <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white">Setup Guide</h3>
+                <p className="text-[13px] text-zinc-500 mt-0.5">Complete your profile</p>
+              </div>
+              <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/20 text-emerald-600 dark:text-emerald-400 text-[12px] font-bold shadow-inner">
+                75%
               </div>
             </div>
             
-            <div className="flex flex-col p-2">
-              <div className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
-                {profile?.isVerified ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> : <Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-700" />}
-                <div className="flex flex-col">
-                  <span className={`text-[13px] font-medium ${profile?.isVerified ? 'text-[#888] line-through' : 'text-black dark:text-white'}`}>Verify Email Address</span>
-                </div>
+            <div className="p-2">
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                {profile?.isVerified ? (
+                  <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                ) : (
+                  <Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-600 shrink-0" />
+                )}
+                <span className={`text-[13px] font-medium ${profile?.isVerified ? 'text-zinc-400 dark:text-zinc-600 line-through' : 'text-zinc-900 dark:text-zinc-100'}`}>
+                  Verify Email Address
+                </span>
               </div>
               
-              <Link href="/dashboard/settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors group">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-medium text-[#888] line-through">Pick a custom theme</span>
+              <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </div>
+                <span className="text-[13px] font-medium text-zinc-400 dark:text-zinc-600 line-through">
+                  Pick a custom theme
+                </span>
               </Link>
               
-              <Link href="/dashboard/settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors group">
-                <Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-700 group-hover:text-black dark:group-hover:text-white transition-colors" />
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-medium text-black dark:text-white">Add a short bio</span>
-                </div>
+              <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
+                <Circle className="w-5 h-5 text-zinc-300 dark:text-zinc-600 group-hover:text-zinc-500 shrink-0 transition-colors" />
+                <span className="text-[13px] font-medium text-zinc-900 dark:text-zinc-100">
+                  Add a short bio
+                </span>
               </Link>
               
-              <Link href="/dashboard/settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors group">
-                <CheckCircle2 className="w-5 h-5 text-emerald-500" />
-                <div className="flex flex-col">
-                  <span className="text-[13px] font-medium text-[#888] line-through">Add your first custom link</span>
+              <Link href="/dashboard/settings" className="flex items-center gap-3 px-4 py-3 rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors group">
+                <div className="w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center shrink-0">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
                 </div>
+                <span className="text-[13px] font-medium text-zinc-400 dark:text-zinc-600 line-through">
+                  Add your first custom link
+                </span>
               </Link>
-            </div>
-          </div>
-
-          {/* Security Status (Moved from left column) */}
-          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm p-5">
-            <div className="flex flex-row items-center justify-between pb-3 border-b border-zinc-100 dark:border-[#111] mb-4">
-              <span className="text-[13px] font-medium text-[#666] tracking-tight">Account Security</span>
-              <ShieldCheck className={`w-4 h-4 ${profile?.isVerified ? 'text-emerald-500' : 'text-amber-500'}`} />
-            </div>
-            <div>
-              <div className="text-xl font-semibold tracking-tight mb-2 text-black dark:text-white">
-                {profile?.isVerified ? 'Protected' : 'Action Needed'}
-              </div>
-              <div className="flex items-center gap-2 text-[13px] text-[#666] mt-1">
-                <div className="flex-1 h-1.5 bg-zinc-100 dark:bg-[#111] rounded-full overflow-hidden">
-                  <div className={`h-full rounded-full ${profile?.isVerified ? 'bg-emerald-500 w-[90%]' : 'bg-amber-500 w-[40%]'}`} />
-                </div>
-                <span className="font-medium">{profile?.isVerified ? 'Good' : 'Weak'}</span>
-              </div>
             </div>
           </div>
 
           {/* Active Sessions */}
-          <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm flex flex-col">
-            <div className="p-5 border-b border-zinc-200 dark:border-[#333] flex items-center justify-between">
-              <div>
-                <h3 className="text-[15px] font-semibold text-black dark:text-white">Active Sessions</h3>
-              </div>
-              <Link href="/dashboard/settings" className="p-1.5 text-[#888] hover:text-black dark:hover:text-white rounded-md hover:bg-zinc-100 dark:hover:bg-[#111] transition-colors">
-                <ChevronRight className="w-4 h-4" />
-              </Link>
+          <div className="bg-white dark:bg-zinc-900 border border-zinc-200/80 dark:border-zinc-800/80 rounded-2xl shadow-sm flex flex-col relative overflow-hidden">
+            <div className="px-6 py-5 border-b border-zinc-100 dark:border-zinc-800 flex justify-between items-center bg-zinc-50/50 dark:bg-zinc-900/50">
+              <h3 className="text-[15px] font-semibold text-zinc-900 dark:text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-zinc-500" /> Security
+              </h3>
+              <span className={`text-[11px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full border ${profile?.isVerified ? 'bg-emerald-50/50 border-emerald-200 text-emerald-600 dark:bg-emerald-500/10 dark:border-emerald-500/20 dark:text-emerald-400' : 'bg-amber-50/50 border-amber-200 text-amber-600 dark:bg-amber-500/10 dark:border-amber-500/20 dark:text-amber-400'}`}>
+                {profile?.isVerified ? 'Protected' : 'Action Needed'}
+              </span>
             </div>
-            <div className="flex-1 overflow-y-auto">
-              <div className="divide-y divide-zinc-100 dark:divide-[#111]">
-                {sessions.slice(0, 3).map((session) => (
-                  <div key={session.id} className="p-4 flex items-center justify-between hover:bg-[#fafafa] dark:hover:bg-[#0a0a0a] transition-colors">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded border border-zinc-200 dark:border-[#333] flex items-center justify-center bg-white dark:bg-[#000] text-[#666]">
-                        <MonitorSmartphone className="w-4 h-4" />
-                      </div>
-                      <div className="flex flex-col">
-                        <span className="font-semibold text-[13px] text-black dark:text-white truncate max-w-[120px]">{parseUA(session.device)}</span>
-                        <span className="text-[11px] text-[#888]">{session.ipAddress}</span>
-                      </div>
+            
+            <div className="flex flex-col p-2">
+              <span className="px-4 pt-3 pb-2 text-[11px] font-semibold tracking-wider text-zinc-400 uppercase">Recent Logins</span>
+              {sessions.slice(0, 3).map((session) => (
+                <div key={session.id} className="px-4 py-3 flex items-center justify-between rounded-xl hover:bg-zinc-50 dark:hover:bg-zinc-800/50 transition-colors">
+                  <div className="flex items-center gap-4">
+                    <div className="w-9 h-9 rounded-full bg-zinc-100 dark:bg-zinc-800 flex items-center justify-center shrink-0 text-zinc-500 border border-zinc-200/50 dark:border-zinc-700/50">
+                      <MonitorSmartphone className="w-4 h-4" />
                     </div>
-                    <div className="flex items-center gap-2">
-                      {session.isCurrent && (
-                        <span className="w-2 h-2 rounded-full bg-emerald-500" title="Current session"></span>
-                      )}
+                    <div className="flex flex-col">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[13px] font-semibold text-zinc-900 dark:text-zinc-100 truncate max-w-[120px]">{parseUA(session.device)}</span>
+                        {session.isCurrent && (
+                          <span className="flex h-2 w-2 relative" title="Current session">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                          </span>
+                        )}
+                      </div>
+                      <span className="text-[12px] text-zinc-500 font-mono mt-0.5">{session.ipAddress}</span>
                     </div>
                   </div>
-                ))}
-              </div>
+                </div>
+              ))}
             </div>
           </div>
 

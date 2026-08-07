@@ -49,6 +49,24 @@ export async function legacyGetSecurityLogs(page = 1, limit = 5) {
 export async function legacyGetPublicProfile(username: string) {
   if (!hasLegacyApi()) return null;
   const res = await fetch(`${LEGACY_API}/auth/user/${username}`, { cache: 'no-store' });
+
+  // 403 = profile exists but is private — throw so caller can show the right screen
+  if (res.status === 403) throw new Error('PROFILE_PRIVATE');
+
   if (!res.ok) return null;
-  return res.json();
+  const data = await res.json();
+
+  // DynamoDB may return socialLinks/customLinks as JSON strings — safely parse them
+  if (data && typeof data.socialLinks === 'string') {
+    try { data.socialLinks = JSON.parse(data.socialLinks); } catch { data.socialLinks = {}; }
+  }
+  if (data && typeof data.customLinks === 'string') {
+    try { data.customLinks = JSON.parse(data.customLinks); } catch { data.customLinks = []; }
+  }
+  // Ensure customLinks is always an array
+  if (data && !Array.isArray(data.customLinks)) {
+    data.customLinks = [];
+  }
+
+  return data;
 }

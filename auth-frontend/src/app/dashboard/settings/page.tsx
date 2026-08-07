@@ -645,36 +645,92 @@ export default function SettingsPage() {
 
           {activeTab === 'preferences' && (
             <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
-              <div className="border border-zinc-200 dark:border-[#333] bg-white dark:bg-[#000] rounded-xl shadow-sm overflow-hidden flex flex-col p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-[16px] font-semibold text-black dark:text-white">Profile Visibility</h3>
-                      <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-medium bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border border-purple-200 dark:border-purple-500/20">
-                        {profile?.publishedBlogCount || 0} published blog{(profile?.publishedBlogCount || 0) !== 1 ? 's' : ''}
-                      </span>
+              <div className="border border-zinc-200 dark:border-[#333] rounded-xl shadow-sm overflow-hidden">
+                {/* Subtle top bar — same color always */}
+                <div className="h-[3px] w-full bg-zinc-200 dark:bg-[#1f1f1f]" />
+
+                <div className="bg-white dark:bg-[#000] p-6">
+                  <div className="flex items-start justify-between gap-4">
+
+                    {/* Icon + Text */}
+                    <div className="flex items-start gap-4 min-w-0">
+                      <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-zinc-100 dark:bg-zinc-900 flex items-center justify-center mt-0.5">
+                        {profile?.isProfilePublic !== false ? (
+                          <svg className="w-[18px] h-[18px] text-zinc-500 dark:text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253M3 12c0 .778.099 1.533.284 2.253" />
+                          </svg>
+                        ) : (
+                          <svg className="w-[18px] h-[18px] text-zinc-400 dark:text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="1.8">
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
+                          </svg>
+                        )}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-[15px] font-semibold text-black dark:text-white">
+                            Profile Visibility
+                          </span>
+                          <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold tracking-widest uppercase border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-[#1a1a1a] text-zinc-500 dark:text-zinc-400">
+                            <span className={cn(
+                              "w-1.5 h-1.5 rounded-full flex-shrink-0",
+                              profile?.isProfilePublic !== false ? "bg-zinc-400 dark:bg-zinc-500" : "bg-zinc-300 dark:bg-zinc-700"
+                            )} />
+                            {profile?.isProfilePublic !== false ? 'Live' : 'Hidden'}
+                          </span>
+                        </div>
+
+                        <p className="text-[13px] text-zinc-500 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                          {profile?.isProfilePublic !== false
+                            ? 'Your profile is publicly discoverable. Anyone with your link can view it.'
+                            : 'Your profile is not visible to the public. Enable to share your work.'}
+                        </p>
+
+                        <p className={cn(
+                          "text-[12px] mt-2 font-medium font-mono",
+                          profile?.isProfilePublic !== false
+                            ? "text-zinc-500 dark:text-zinc-400"
+                            : "text-zinc-400 dark:text-zinc-600 line-through decoration-zinc-300 dark:decoration-zinc-700"
+                        )}>
+                          /@{profile?.username || 'your-username'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[14px] text-[#666] mt-1">Make your public profile page visible to the internet.</p>
+
+                    {/* Toggle */}
+                    <button
+                      onClick={() => handleToggleProfilePublic(profile?.isProfilePublic === false ? true : false)}
+                      disabled={isTogglingProfilePublic}
+                      aria-label={profile?.isProfilePublic !== false ? 'Make profile private' : 'Make profile public'}
+                      className={cn(
+                        "flex-shrink-0 relative inline-flex h-[26px] w-[48px] items-center rounded-full border-2 border-transparent transition-colors duration-300 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed",
+                        profile?.isProfilePublic !== false
+                          ? "bg-black dark:bg-white focus-visible:ring-black dark:focus-visible:ring-white"
+                          : "bg-zinc-200 dark:bg-[#2a2a2a] focus-visible:ring-zinc-400"
+                      )}
+                    >
+                      <span className={cn(
+                        "inline-block h-[22px] w-[22px] transform rounded-full shadow transition-transform duration-300 ease-in-out",
+                        profile?.isProfilePublic !== false
+                          ? "bg-white dark:bg-black translate-x-[22px]"
+                          : "bg-white translate-x-0"
+                      )} />
+                    </button>
                   </div>
-                  <button 
-                    onClick={() => handleToggleProfilePublic(profile?.isProfilePublic === false ? true : false)}
-                    disabled={isTogglingProfilePublic}
-                    className={cn("relative inline-flex h-[24px] w-[44px] shrink-0 cursor-pointer items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus-visible:ring-2 focus-visible:ring-black focus-visible:ring-offset-2",
-                      profile?.isProfilePublic !== false ? 'bg-black dark:bg-white' : 'bg-zinc-200 dark:bg-[#333]'
-                    )}
-                  >
-                    <span className={cn("pointer-events-none inline-block h-[20px] w-[20px] transform rounded-full bg-white dark:bg-black shadow ring-0 transition duration-200 ease-in-out",
-                      profile?.isProfilePublic !== false ? 'translate-x-[20px]' : 'translate-x-0'
-                    )} />
-                  </button>
+
+                  {messages['profilePublic'] && (
+                    <div className="mt-5 pt-4 border-t border-zinc-100 dark:border-[#1a1a1a]">
+                      <p className={cn(
+                        "text-[12px] font-medium",
+                        messages['profilePublic'].type === 'error'
+                          ? "text-rose-600 dark:text-rose-500"
+                          : "text-zinc-600 dark:text-zinc-400"
+                      )}>
+                        {messages['profilePublic'].text}
+                      </p>
+                    </div>
+                  )}
                 </div>
-                {messages['profilePublic'] && (
-                  <div className="mt-4 pt-4 border-t border-zinc-200 dark:border-[#333]">
-                    <span className={messages['profilePublic'].type === 'error' ? 'text-[13px] text-rose-600 dark:text-rose-500 font-medium' : 'text-[13px] text-emerald-600 dark:text-emerald-500 font-medium'}>
-                      {messages['profilePublic'].text}
-                    </span>
-                  </div>
-                )}
               </div>
 
 
@@ -742,8 +798,12 @@ export default function SettingsPage() {
                       type="text"
                       className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
                       value={editSocials.github} 
-                      onChange={e => setEditSocials({...editSocials, github: e.target.value})} 
-                      placeholder="octocat"
+                      onChange={e => {
+                        // Strip full URL or @ prefix — store only username
+                        const val = e.target.value.replace(/^@/, '').replace(/^https?:\/\/(www\.)?github\.com\//, '').replace(/\/$/, '');
+                        setEditSocials({...editSocials, github: val});
+                      }}
+                      placeholder="octocat (username only)"
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -752,8 +812,12 @@ export default function SettingsPage() {
                       type="text"
                       className="w-full px-3 py-2 bg-white dark:bg-[#000] border border-zinc-300 dark:border-[#333] rounded-md text-[14px] text-black dark:text-white focus:outline-none focus:ring-1 focus:ring-black dark:focus:ring-white transition-all shadow-sm"
                       value={editSocials.twitter} 
-                      onChange={e => setEditSocials({...editSocials, twitter: e.target.value})} 
-                      placeholder="jack"
+                      onChange={e => {
+                        // Strip full URL or @ prefix — store only username
+                        const val = e.target.value.replace(/^@/, '').replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//, '').replace(/\/$/, '');
+                        setEditSocials({...editSocials, twitter: val});
+                      }}
+                      placeholder="jack (username only)"
                     />
                   </div>
                   <div className="space-y-1.5">
