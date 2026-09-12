@@ -40,6 +40,15 @@ export default function Home() {
           Platform
         </div>
         <nav className="flex items-center gap-2 sm:gap-4">
+          <Link href="/about" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 sm:px-4 py-2 font-medium transition-colors text-sm sm:text-base whitespace-nowrap">
+            About
+          </Link>
+          <Link href="/blog" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 sm:px-4 py-2 font-medium transition-colors text-sm sm:text-base whitespace-nowrap">
+            Blog
+          </Link>
+          <Link href="/projects" className="hidden sm:inline text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 sm:px-4 py-2 font-medium transition-colors text-sm sm:text-base whitespace-nowrap">
+            Projects
+          </Link>
           <ThemeToggle />
           <Link href="/login" className="text-gray-600 dark:text-gray-300 hover:text-black dark:hover:text-white px-2 sm:px-4 py-2 font-medium transition-colors text-sm sm:text-base whitespace-nowrap">
             Log in
