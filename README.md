@@ -16,6 +16,10 @@
 [Quick Start](#-quick-start--local-development) •
 [Documentation](#-documentation-index)
 
+<br /><br />
+
+<img src="images/image.png" alt="Platform Landing Page Preview" width="100%" />
+
 </div>
 
 ---
